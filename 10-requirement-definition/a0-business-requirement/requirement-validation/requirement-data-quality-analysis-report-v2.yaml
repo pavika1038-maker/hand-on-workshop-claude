@@ -1,0 +1,244 @@
+report:
+  title: "Requirement Data Quality Analysis Report"
+  version: "v2"
+  project: "ระบบบริหารการลาและการอนุมัติ — ABC Company"
+  analyzed_by: "Requirement Data Quality Analysis Agent"
+  reference_v1: "requirement-data-quality-analysis-report.yaml"
+  qa_answers_source: "requirement-data-quality-analysis-qa-list.yaml"
+  qa_answers_status: "12/12 Closed"
+
+executive_summary:
+  total_files_analyzed: 6
+  overview: >
+    หลังได้รับคำตอบจาก Business User ครบทั้ง 12 รายการ ประเด็นขัดแย้งหลัก 3 ใน 4 รายการ
+    ได้รับการ resolve แล้ว และประเด็นไม่ชัดเจนได้รับการตอบบางส่วน ทำให้ข้อมูลมีความพร้อม
+    สูงขึ้นอย่างมีนัยสำคัญสำหรับ core flow แต่ยังคงมีประเด็นที่ต้องขอข้อมูลเพิ่มเติม
+    5 รายการก่อนออกแบบ data model ขั้นสมบูรณ์
+  fully_resolved_count: 6
+  partially_resolved_count: 6
+  remaining_open_items_count: 6
+  readiness_level: "Partially Ready"
+  summary_opinion: >
+    ข้อมูลพร้อมเพียงพอสำหรับการออกแบบ System Requirement ในส่วน core flow
+    (access, leave request, approval, notification, HR monitoring)
+    แต่ยังต้องการข้อมูลเพิ่มเติมในส่วน leave quota ของลากิจและ Outsource,
+    cancel/edit business rule, และตารางสะสมวันลาก่อนออกแบบ data model ขั้นสมบูรณ์
+
+source_files_reviewed:
+  - id: 1
+    filename: "ABC-Company-Leave-Form.md"
+    type: ".md"
+    role_in_v2: "ข้อมูลต้นทาง — แบบฟอร์มการยื่นใบลา"
+  - id: 2
+    filename: "ABC-Compay-HR-Regularion.md"
+    type: ".md"
+    role_in_v2: "ข้อมูลต้นทาง — ระเบียบ HR 17 หมวด"
+  - id: 3
+    filename: "ABC-Leave-Workflow-Thai-QA.md"
+    type: ".md"
+    role_in_v2: "ข้อมูลต้นทาง — บทสนทนา HR Q&A"
+  - id: 4
+    filename: "Leave-Management-Request-and-Approval-Business-User.yaml"
+    type: ".yaml"
+    role_in_v2: "ข้อมูลต้นทาง — Business Requirements หลัก"
+  - id: 5
+    filename: "ระบบบริหารการลาและการอนุมัติ.md"
+    type: ".md"
+    role_in_v2: "ข้อมูลต้นทาง — Presentation สรุป"
+  - id: 6
+    filename: "requirement-data-quality-analysis-qa-list.yaml"
+    type: ".yaml"
+    role_in_v2: "ใหม่ใน v2 — คำตอบจาก Business User (12/12 Closed)"
+
+resolve_status:
+  conflicting_information:
+    - id: "C1"
+      topic: "รายการประเภทการลา"
+      status: "Resolved"
+      answer_summary: >
+        ยืนยัน 7 ประเภท: ลาป่วย, ลากิจส่วนตัว, ลาพักผ่อนประจำปี, ลาคลอดบุตร,
+        ลาเพื่อทำหมัน, ลารับราชการทหาร, ลาอุปสมบท (เปิดรับเพิ่มได้ในอนาคต)
+    - id: "C2"
+      topic: "ระยะเวลาแจ้งล่วงหน้าลาพักร้อน"
+      status: "Resolved"
+      answer_summary: "ยืนยัน: ต้องแจ้งล่วงหน้าอย่างน้อย 1 วัน (ค่าจาก PPTX ถูกต้อง)"
+    - id: "C3"
+      topic: "สถานะการเข้าถึง HRIS ปัจจุบัน"
+      status: "Resolved"
+      answer_summary: >
+        HRIS เปิดเฉพาะ HR เท่านั้น ระบบใหม่เป็น Web App แยก integrate กับ HRIS เดิม (ไม่ replace)
+    - id: "C4"
+      topic: "ข้อมูลลากิจ 45 วัน (ข้าราชการ)"
+      status: "Partially Resolved"
+      answer_summary: >
+        ยืนยันว่าเป็นข้อมูลผิดพลาดจากกฎหมายราชการ
+        แต่ยังไม่ได้รับสิทธิ์ลากิจที่ถูกต้องของ ABC
+
+  ambiguous_or_incomplete:
+    - id: "A1"
+      topic: "จำนวนวันลาสูงสุดต่อปี"
+      status: "Partially Resolved"
+      answer_summary: "ลาพักผ่อน 10 วัน/ปี และลาป่วยตามจริงได้รับการยืนยัน แต่ลากิจยังไม่มีข้อมูล"
+    - id: "A2"
+      topic: "สิทธิ์วันลา Outsource"
+      status: "Partially Resolved"
+      answer_summary: "ยืนยันต้องรองรับ Outsource ในระบบเดียว แต่สิทธิ์วันลาและ onboard process ยังไม่ชัด"
+    - id: "A3"
+      topic: "Approval hierarchy"
+      status: "Resolved"
+      answer_summary: "1 ระดับ คือ Line Manager เท่านั้น Multi-level approval อยู่นอก Phase 1"
+    - id: "A4"
+      topic: "Cancel/Edit คำขอลา"
+      status: "Partially Resolved"
+      answer_summary: >
+        มี proposed rules (Cancel สถานะ Pending ได้, Approved ต้อง re-approve, ไม่อนุญาต Edit หลัง Approve)
+        แต่ยังต้องยืนยันจาก Business Owner
+    - id: "A5"
+      topic: "เหตุผลการ Reject"
+      status: "Resolved"
+      answer_summary: "Optional field และแสดงเหตุผลใน Email แจ้งผลให้พนักงาน"
+    - id: "A6"
+      topic: "ผู้รับ Email notification"
+      status: "Partially Resolved"
+      answer_summary: >
+        Event mapping ชัดเจน (ยื่น→Manager, Approve→Employee+HR, Reject→Employee)
+        แต่ scope HR ยังไม่ 100% (ทุก event หรือบาง event)
+    - id: "A7"
+      topic: "ช่องทาง notification Manager"
+      status: "Resolved"
+      answer_summary: "Email (หลัก) + In-system notification (เสริม) ทั้งสองช่องทาง"
+    - id: "A8"
+      topic: "ตารางสะสมวันลาพักผ่อน"
+      status: "Partially Resolved"
+      answer_summary: "มี proposed table แต่ยังต้องการ HR ยืนยันตารางที่ได้รับอนุมัติจริง"
+
+duplicated_information:
+  note: "ประเด็นซ้ำซ้อนไม่เปลี่ยนแปลงจาก v1 เนื่องจากเป็นธรรมชาติของเอกสารหลายชุด"
+  items:
+    - id: "D1"
+      topic: "ประเภทการลา"
+      related_files:
+        - "Leave-Form.md"
+        - "HR-Regulation.md"
+        - "QA.md"
+        - "Leave-Management.yaml"
+        - "PPTX.md"
+      note_v2: "Resolved ด้านรายการ (C1) — ความซ้ำซ้อนยังมีอยู่ตามธรรมชาติของเอกสาร"
+    - id: "D2"
+      topic: "ใบรับรองแพทย์กรณีลาป่วยเกิน 3 วัน"
+      related_files:
+        - "QA.md"
+        - "PPTX.md"
+      note_v2: "ยืนยันสอดคล้องกัน ไม่มีความขัดแย้ง"
+    - id: "D3"
+      topic: "Workflow การยื่นลา"
+      related_files:
+        - "QA.md"
+        - "Leave-Management.yaml"
+        - "PPTX.md"
+      note_v2: "C3 Resolved แล้ว Workflow ใน YAML (to-be) เป็น version หลักที่ใช้อ้างอิง"
+
+open_items:
+  description: "ประเด็นที่ยังต้องดำเนินการต่อหลังจากได้รับคำตอบ v1 QA ครบแล้ว"
+  items:
+    - id: "R1"
+      topic: "สิทธิ์วันลากิจ (จำนวนวัน/ปี) สำหรับพนักงาน ABC Company"
+      missing_info: "HR ต้องยืนยันตัวเลขที่ถูกต้อง แยกตามประเภทพนักงาน (ประจำ / Outsource)"
+      impact: "สูง — กระทบ leave quota data model และ validation rule"
+      priority: "High"
+    - id: "R2"
+      topic: "นโยบายสิทธิ์วันลาของพนักงาน Outsource"
+      missing_info: "HR ต้องยืนยันว่าสิทธิ์เท่ากับพนักงานประจำหรือมีตารางแยก"
+      impact: "สูง — กระทบ leave balance calculation แยกตาม employee type"
+      priority: "High"
+    - id: "R3"
+      topic: "Process onboard ข้อมูล Outsource เข้าระบบใหม่"
+      missing_info: "HR/IT ต้องกำหนด flow (manual input, import file, หรือ API)"
+      impact: "กลาง — กระทบ initial data migration และ user management"
+      priority: "Medium"
+    - id: "R4"
+      topic: "ยืนยัน Business Rule กรณียกเลิกคำขอที่ Approved แล้ว"
+      missing_info: "Business Owner ต้องยืนยัน proposed re-approve flow"
+      impact: "กลาง — กระทบ status transition และ workflow design"
+      priority: "Medium"
+    - id: "R5"
+      topic: "กำหนด scope HR สำหรับ Email notification"
+      missing_info: "Business Owner / HR ต้องยืนยันว่า HR รับ notification ทุก event หรือเฉพาะบาง event"
+      impact: "กลาง — กระทบ notification design และ email template"
+      priority: "Medium"
+    - id: "R6"
+      topic: "ตารางสะสมวันลาพักผ่อนประจำปีตามอายุงาน"
+      missing_info: "HR ต้องให้ตารางที่ได้รับอนุมัติแล้ว พร้อมเกณฑ์อายุงาน"
+      impact: "กลาง — กระทบ leave balance calculation logic"
+      priority: "Medium"
+
+data_quality_assessment:
+  completeness:
+    level: "ปานกลาง-สูง (72%)"
+    change_from_v1: "+12%"
+    reason: >
+      ได้รับข้อมูลประเภทการลาครบ 7 ประเภท, approval model ชัดเจน,
+      notification channel และ reject rule กำหนดแล้ว
+      ยังขาดข้อมูลสิทธิ์วันลากิจ, สิทธิ์ Outsource, ตารางสะสมวันลา และ cancel flow ที่ได้รับการยืนยัน
+  consistency:
+    level: "สูง (85%)"
+    change_from_v1: "+45%"
+    reason: >
+      ความขัดแย้ง 3 ใน 4 รายการ (C1, C2, C3) ได้รับการ resolve อย่างชัดเจน
+      C4 ยืนยันว่าเป็นข้อมูลผิดพลาดแล้ว แต่ยังขาดข้อมูลที่ถูกต้องมาแทนที่
+  clarity:
+    level: "สูง (82%)"
+    change_from_v1: "+17%"
+    reason: >
+      ขอบเขตระบบ, approval model, notification flow และประเภทการลาชัดเจนมากขึ้น
+      ยังมีความไม่ชัดในเรื่อง quota ของลากิจและ Outsource policy
+  traceability:
+    level: "สูง (88%)"
+    change_from_v1: "+3%"
+    reason: >
+      คำตอบ QA ทุกรายการสามารถ trace กลับไปยัง QA ID ใน qa-list.yaml
+      และ reference ID (C1, A3 ฯลฯ) ได้ชัดเจน
+  requirement_readiness:
+    level: "สูง (78%)"
+    change_from_v1: "+23%"
+    reason: >
+      Core flow พร้อมสำหรับการออกแบบ System Requirement แล้ว
+      ส่วนที่ยังขาดคือ business rule เชิง data (quota, accumulation)
+      ซึ่งส่งผลต่อ data model แต่ไม่ blocking core feature
+
+v1_to_v2_comparison:
+  - dimension: "Completeness"
+    v1: "60%"
+    v2: "72%"
+    delta: "+12%"
+  - dimension: "Consistency"
+    v1: "40%"
+    v2: "85%"
+    delta: "+45%"
+  - dimension: "Clarity"
+    v1: "65%"
+    v2: "82%"
+    delta: "+17%"
+  - dimension: "Traceability"
+    v1: "85%"
+    v2: "88%"
+    delta: "+3%"
+  - dimension: "Requirement Readiness"
+    v1: "55%"
+    v2: "78%"
+    delta: "+23%"
+
+final_verdict:
+  status: "Partially Ready"
+  progression: "คืบหน้าจาก v1 อย่างมีนัยสำคัญ — Core flow พร้อม ยังขาด quota data"
+  main_reasons:
+    - "Core process และ business rule หลัก (ประเภทการลา, approval, notification, HRIS integration) พร้อมสำหรับการทำ System Requirement แล้ว"
+    - "ยังขาด leave quota data ของลากิจและ Outsource ซึ่งจำเป็นสำหรับการออกแบบ leave balance module"
+  remaining_risks:
+    - "หากเริ่มออกแบบ leave balance module โดยไม่มีข้อมูล R1 และ R2 อาจต้องแก้ไข data model ในภายหลัง"
+    - "Cancel flow (R4) ที่ยังไม่ได้รับการยืนยันอาจกระทบ status machine design"
+  next_actions:
+    - "นำ Open Items R1 และ R2 (High Priority) ไปถาม HR ทันที"
+    - "เริ่มออกแบบ System Requirement สำหรับ core flow ได้เลยโดยไม่ต้องรอ"
+    - "ออกแบบ leave balance data structure แบบ configurable quota เพื่อรอรับค่าจาก HR ทีหลัง"
+    - "นำ R4-R6 (Medium Priority) ยืนยันในรอบ BA workshop ถัดไปก่อน sign-off requirement"

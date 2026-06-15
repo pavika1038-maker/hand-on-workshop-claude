@@ -1,0 +1,258 @@
+report:
+  title: "Requirement Data Quality Analysis Report"
+  project: "ระบบบริหารการลาและการอนุมัติ — ABC Company"
+  analyzed_by: "Requirement Data Quality Analysis Agent"
+
+executive_summary:
+  total_files_analyzed: 5
+  overview: >
+    เอกสารครอบคลุมหลากหลายมุมมอง ได้แก่ แบบฟอร์มการลา ระเบียบ HR บทสนทนา QA
+    Business Requirement และ Presentation ซึ่งให้บริบทที่กว้างขึ้น แต่มีความไม่สอดคล้องกัน
+    ในหลายจุดที่ต้องยืนยันก่อนเริ่มทำ System Requirement
+  duplicated_issues_count: 3
+  conflicting_issues_count: 4
+  ambiguous_issues_count: 8
+  readiness_level: "Partially Ready"
+  summary_opinion: >
+    ข้อมูลมีเนื้อหาเพียงพอในระดับหนึ่งสำหรับ happy path ของ process การขอลา
+    แต่ยังขาดรายละเอียดสำคัญที่ส่งผลโดยตรงต่อ business rule เช่น จำนวนวันลาต่อปีแต่ละประเภท
+    เงื่อนไขของพนักงาน Outsource Multi-level approval
+    และมีข้อขัดแย้งระหว่างไฟล์ที่ต้องได้รับการยืนยันจาก Business Owner ก่อนดำเนินการต่อ
+
+source_files_reviewed:
+  - id: 1
+    filename: "ABC-Company-Leave-Form.md"
+    type: ".md"
+    content_summary: "แบบฟอร์มการยื่นใบลา ข้อมูลพนักงาน รายละเอียดการลา ส่วนลายเซ็นผู้อนุมัติ"
+  - id: 2
+    filename: "ABC-Compay-HR-Regularion.md"
+    type: ".md"
+    content_summary: "ระเบียบ HR ครบ 17 หมวด ครอบคลุมการลา วินัย การประเมินผล สวัสดิการ"
+  - id: 3
+    filename: "ABC-Leave-Workflow-Thai-QA.md"
+    type: ".md"
+    content_summary: "บทสนทนา HR Q&A กับพนักงานใหม่ อธิบาย workflow การลา 3 ขั้นตอน"
+  - id: 4
+    filename: "Leave-Management-Request-and-Approval-Business-User.yaml"
+    type: ".yaml"
+    content_summary: "Business Requirements ครบถ้วน (BR-001 ถึง BR-010), Workflow, Business Rules, User Stories"
+  - id: 5
+    filename: "ระบบบริหารการลาและการอนุมัติ.md"
+    type: ".md"
+    content_summary: "สรุป Presentation 3 Slide: ขั้นตอน workflow, ประเภทการลาและสิทธิ์"
+
+duplicated_information:
+  - id: "D1"
+    topic: "ประเภทการลา"
+    related_files:
+      - "Leave-Form.md"
+      - "HR-Regulation.md"
+      - "QA.md"
+      - "Leave-Management.yaml"
+      - "PPTX.md"
+    detail: "ทุกไฟล์กล่าวถึงประเภทการลาซ้ำ แต่รายการไม่ตรงกันทุกไฟล์ (ดู C1)"
+    confidence: "สูง"
+  - id: "D2"
+    topic: "ข้อกำหนดใบรับรองแพทย์กรณีลาป่วยต่อเนื่องเกิน 3 วัน"
+    related_files:
+      - "QA.md"
+      - "PPTX.md"
+    detail: "ทั้งสองไฟล์ระบุตรงกันว่าลาป่วยเกิน 3 วันต้องมีใบรับรองแพทย์"
+    confidence: "สูง"
+  - id: "D3"
+    topic: "Workflow การยื่นลา"
+    related_files:
+      - "QA.md"
+      - "Leave-Management.yaml"
+      - "PPTX.md"
+    detail: "ทั้งสามไฟล์ระบุ flow การขอลา แต่จำนวน step และรายละเอียดต่างกัน (ดู C3)"
+    confidence: "สูง"
+
+conflicting_information:
+  - id: "C1"
+    topic: "รายการประเภทการลาที่ระบบต้องรองรับ"
+    related_files:
+      - "Leave-Form.md"
+      - "HR-Regulation.md"
+      - "QA.md"
+      - "PPTX.md"
+    conflict_detail: >
+      Leave Form ระบุ 4 ประเภท (ป่วย, กิจ, พักร้อน, อื่นๆ),
+      HR Reg เพิ่ม "ลาคลอด", QA กล่าวถึง 3 ประเภทหลัก,
+      PPTX รวมลาป่วยและลากิจไว้ด้วยกัน
+    impact: "สูง — กระทบ data model และ leave balance screen"
+    recommendation: "ขอให้ Business Owner ยืนยันรายการประเภทการลาที่ครบถ้วนและ canonical"
+  - id: "C2"
+    topic: "ระยะเวลาแจ้งล่วงหน้าสำหรับลาพักร้อน"
+    related_files:
+      - "QA.md"
+      - "PPTX.md"
+    conflict_detail: "QA ระบุว่าต้องแจ้งล่วงหน้าอย่างน้อย 1 สัปดาห์ แต่ PPTX ระบุว่าต้องส่งใบลาล่วงหน้าอย่างน้อย 1 วัน"
+    impact: "สูง — กระทบ validation rule ของระบบ"
+    recommendation: "ยืนยันกับ HR Manager ว่าค่าที่ถูกต้องคือเท่าใด"
+  - id: "C3"
+    topic: "สถานะการเข้าถึง HRIS ปัจจุบัน"
+    related_files:
+      - "QA.md"
+      - "Leave-Management.yaml"
+    conflict_detail: >
+      YAML ระบุชัดว่า "HRIS เปิดใช้งานได้เฉพาะฝ่าย HR"
+      แต่ใน QA HR แนะนำพนักงานใหม่ให้ "เข้าไปเช็กสิทธิ์วันลาในระบบ HRIS"
+    impact: "กลาง — กระทบความเข้าใจ as-is process และขอบเขตของระบบใหม่"
+    recommendation: "ชี้แจงว่า QA.md อ้างถึงระบบ as-is หรือ to-be และ HRIS ที่กล่าวถึงในบทสนทนาคือระบบเดียวกันกับที่ระบุใน YAML หรือไม่"
+  - id: "C4"
+    topic: "ข้อมูลจำนวนวันลากิจสำหรับข้าราชการ"
+    related_files:
+      - "PPTX.md"
+    conflict_detail: "PPTX ระบุ 'ลากิจส่วนตัวได้ปีละไม่เกิน 45 วัน (ข้าราชการ)' ซึ่งไม่สอดคล้องกับบริบทขององค์กรเอกชน (ABC Company)"
+    impact: "กลาง — อาจทำให้เกิดความสับสนใน business rule"
+    recommendation: "ยืนยันว่าข้อมูลนี้ถูกนำมาจากกฎหมายราชการโดยผิดพลาด และขอข้อมูลสิทธิ์ลากิจที่ถูกต้องของบริษัท"
+
+ambiguous_or_incomplete_information:
+  - id: "A1"
+    topic: "จำนวนวันลาสูงสุดต่อปีแต่ละประเภท"
+    source_file: "PPTX.md (ระบุเพียงลาพักผ่อน 10 วัน)"
+    what_is_unclear: "มีเพียงลาพักผ่อน (10 วัน/ปี) ที่ถูกระบุ ไม่มีจำนวนวันของลาป่วย และลากิจ"
+    additional_info_needed: "ตารางสิทธิ์วันลาครบทุกประเภท แยกตามประเภทพนักงาน"
+    impact: "สูง — กระทบ leave balance data model และ validation"
+  - id: "A2"
+    topic: "สิทธิ์วันลาของพนักงาน Outsource"
+    source_file: "Leave-Management.yaml (BR-008, RULE-001)"
+    what_is_unclear: "ระบุว่าต้องรองรับ Outsource ในระบบเดียว แต่ไม่บอกว่า Outsource มีสิทธิ์วันลาต่างจากพนักงานประจำหรือไม่"
+    additional_info_needed: "นโยบายสิทธิ์วันลาของพนักงาน Outsource แยกจากพนักงานประจำ"
+    impact: "สูง — กระทบ leave balance calculation และ employee master"
+  - id: "A3"
+    topic: "Approval authority: หัวหน้างาน vs ผู้มีอำนาจ"
+    source_file: "PPTX.md (Slide 2), Leave-Management.yaml (BR-004, RULE-005)"
+    what_is_unclear: "PPTX ใช้คำว่า 'ผู้มีอำนาจพิจารณา' แยกจาก 'หัวหน้างาน' แต่ YAML ระบุว่าหัวหน้างานคือ approver หลัก ไม่ชัดว่ามี level การอนุมัติมากกว่า 1 หรือไม่"
+    additional_info_needed: "ยืนยัน approval hierarchy และกรณีที่ต้องมี approver ระดับสูงกว่า"
+    impact: "สูง — กระทบ workflow design และ routing logic"
+  - id: "A4"
+    topic: "การยกเลิก/แก้ไขคำขอลาที่ยื่นไปแล้ว"
+    source_file: "ทุกไฟล์ (ไม่กล่าวถึง)"
+    what_is_unclear: "ไม่มีไฟล์ใดระบุว่าพนักงานสามารถ Cancel หรือแก้ไขคำขอลาที่ยื่นไปแล้วได้หรือไม่"
+    additional_info_needed: "กำหนด business rule กรณี Cancel/Edit leave request และ status ที่เกิดขึ้น"
+    impact: "กลาง — กระทบ status flow และ UX"
+  - id: "A5"
+    topic: "เหตุผลการ Reject และการแจ้งผล"
+    source_file: "Leave-Management.yaml (BR-004, BR-005, RULE-004)"
+    what_is_unclear: "ไม่ระบุว่าหัวหน้างานต้องระบุเหตุผลเมื่อ Reject หรือไม่ และเหตุผลดังกล่าวจะถูกส่งในอีเมลหรือไม่"
+    additional_info_needed: "Business rule กรณี Reject: required/optional reason และเนื้อหา Email"
+    impact: "กลาง — กระทบ UX ของ Manager และเนื้อหา notification"
+  - id: "A6"
+    topic: "ผู้รับ Email แจ้งผล"
+    source_file: "Leave-Management.yaml (BR-005, RULE-004)"
+    what_is_unclear: "BR-005 ระบุ 'แจ้งทั้งพนักงานและผู้เกี่ยวข้อง' แต่ไม่ระบุว่า 'ผู้เกี่ยวข้อง' หมายถึงใคร (HR? Manager? ทั้งคู่?)"
+    additional_info_needed: "รายชื่อ recipient ของ Email notification แต่ละ event"
+    impact: "กลาง — กระทบ notification design และ email template"
+  - id: "A7"
+    topic: "ช่องทาง notification ให้หัวหน้างาน"
+    source_file: "Leave-Management.yaml (workflow step 4)"
+    what_is_unclear: "Workflow ระบุว่าระบบ 'แจ้งหัวหน้างาน' เมื่อมีคำขอใหม่ แต่ไม่ระบุว่าเป็น Email, in-system notification หรือทั้งคู่"
+    additional_info_needed: "ยืนยันช่องทาง notification สำหรับ Manager"
+    impact: "ต่ำ — กระทบ notification channel design"
+  - id: "A8"
+    topic: "กฎการสะสมวันลาพักผ่อน"
+    source_file: "PPTX.md (Slide 3)"
+    what_is_unclear: "PPTX ระบุว่า 'สะสมได้ตามอายุงาน' แต่ไม่มีรายละเอียดสูตรการคำนวณ"
+    additional_info_needed: "ตารางการสะสมวันลาพักผ่อนตามอายุงาน"
+    impact: "กลาง — กระทบ leave balance calculation"
+
+qa_list:
+  high_priority:
+    - id: "QA-H1"
+      ref: "C1"
+      question: "ประเภทการลาที่ถูกต้องและครบถ้วนสำหรับระบบ"
+      detail: "ขอให้ Business Owner / HR ยืนยันรายการประเภทการลาทั้งหมดที่ระบบใหม่ต้องรองรับ พร้อมชื่อทางการของแต่ละประเภท (รวม/ไม่รวมลาคลอด, ลาอื่นๆ ได้แก่อะไร)"
+    - id: "QA-H2"
+      ref: "C2"
+      question: "ระยะเวลาแจ้งล่วงหน้าลาพักร้อน"
+      detail: "ยืนยันว่าต้องแจ้งล่วงหน้าอย่างน้อยกี่วัน (1 วัน หรือ 1 สัปดาห์) เพื่อนำไปเป็น validation rule ในระบบ"
+    - id: "QA-H3"
+      ref: "A1"
+      question: "จำนวนวันลาสูงสุดต่อปีของแต่ละประเภท"
+      detail: "ขอตารางสิทธิ์วันลาครบถ้วนแยกตามประเภทการลาและประเภทพนักงาน (ประจำ / Outsource)"
+    - id: "QA-H4"
+      ref: "A2"
+      question: "สิทธิ์วันลาของพนักงาน Outsource"
+      detail: "ยืนยันว่า Outsource มีสิทธิ์วันลาเท่ากับพนักงานประจำหรือมีนโยบายแยก และ data ของ Outsource จะถูก onboard เข้าระบบอย่างไร"
+    - id: "QA-H5"
+      ref: "A3"
+      question: "Approval hierarchy"
+      detail: "ยืนยันว่าการอนุมัติใช้ผู้อนุมัติ 1 ระดับ (หัวหน้างานโดยตรง) หรือมีกรณีที่ต้องผ่าน 2 ระดับ และ 'ผู้มีอำนาจ' ใน PPTX หมายถึงบุคคลเดียวกับ Line Manager ใน YAML หรือไม่"
+    - id: "QA-H6"
+      ref: "C3"
+      question: "สถานะ HRIS ปัจจุบัน"
+      detail: "ยืนยันว่าขณะนี้พนักงานทั่วไปเข้าระบบ HRIS ได้หรือไม่ และระบบใหม่ที่จะพัฒนาจะ replace หรือ integrate กับ HRIS เดิม"
+  medium_priority:
+    - id: "QA-M1"
+      ref: "A4"
+      question: "กฎการยกเลิก/แก้ไขคำขอลา"
+      detail: "กำหนด business rule ว่าพนักงานสามารถ Cancel หรือแก้ไขคำขอที่ยื่นแล้วได้หรือไม่ ในสถานะใด และ flow หลังจากนั้นเป็นอย่างไร"
+    - id: "QA-M2"
+      ref: "A5"
+      question: "เหตุผลการ Reject"
+      detail: "กำหนดว่าหัวหน้างานต้องระบุเหตุผลเมื่อ Reject หรือเป็น optional และเหตุผลดังกล่าวจะปรากฏในการแจ้งผลทาง Email หรือไม่"
+    - id: "QA-M3"
+      ref: "A6"
+      question: "รายชื่อผู้รับ Email notification"
+      detail: "ระบุ recipient ทุกกลุ่มของ Email notification ในแต่ละ event (ยื่นลา, อนุมัติ, ปฏิเสธ)"
+    - id: "QA-M4"
+      ref: "A8"
+      question: "สูตรการสะสมวันลาพักผ่อนตามอายุงาน"
+      detail: "ขอตารางการสะสมวันลาพักผ่อนตามอายุงาน (ถ้ามี)"
+  low_priority:
+    - id: "QA-L1"
+      ref: "A7"
+      question: "ช่องทาง notification ให้หัวหน้างาน"
+      detail: "ยืนยันว่าเมื่อมีคำขอลาใหม่ ระบบแจ้งหัวหน้างานผ่านช่องทางใด (Email, In-system, หรือทั้งคู่)"
+    - id: "QA-L2"
+      ref: "C4"
+      question: "ข้อมูลลากิจ 45 วัน (ข้าราชการ)"
+      detail: "ยืนยันว่าข้อมูลใน PPTX Slide 3 เกี่ยวกับ 'ลากิจ 45 วันสำหรับข้าราชการ' เป็นข้อมูลอ้างอิงผิดพลาด และขอสิทธิ์ลากิจที่ถูกต้องสำหรับพนักงาน ABC Company"
+
+data_quality_assessment:
+  completeness:
+    level: "ปานกลาง (60%)"
+    reason: >
+      ข้อมูลครอบคลุม happy path process และ business goal เป็นอย่างดี
+      แต่ยังขาด business rule สำคัญ เช่น จำนวนวันลาต่อปี สิทธิ์ Outsource
+      กฎการ Cancel/Edit สูตรการสะสมวันลา และรายละเอียด notification recipients
+  consistency:
+    level: "ต่ำ (40%)"
+    reason: >
+      มีความขัดแย้งระหว่างไฟล์ใน 4 ประเด็นสำคัญ ได้แก่ ระยะเวลาแจ้งล่วงหน้าลาพักร้อน (1 วัน vs 1 สัปดาห์)
+      สถานะการเข้าถึง HRIS approval authority และข้อมูลลากิจข้าราชการ
+      ซึ่งต้องได้รับการยืนยันก่อนออกแบบระบบ
+  clarity:
+    level: "ปานกลาง (65%)"
+    reason: >
+      ไฟล์ YAML ให้ข้อมูลที่ชัดเจนและมีโครงสร้างดีที่สุด
+      ส่วนไฟล์ QA และ PPTX มีข้อมูลบางส่วนที่ต้องตีความหรือชี้แจงเพิ่มเติม
+      โดยเฉพาะ actor และ approval level
+  traceability:
+    level: "สูง (85%)"
+    reason: >
+      ทุกไฟล์ระบุ source file อย่างชัดเจน และ YAML มี req_id และ rule_id ที่ทำให้ trace กลับได้ง่าย
+      อย่างไรก็ตาม ไฟล์ PPTX และ QA ไม่มี structured reference
+      ที่สามารถ link กลับไปยัง requirement แต่ละข้อได้โดยตรง
+  requirement_readiness:
+    level: "ปานกลาง (55%)"
+    reason: >
+      ข้อมูลเพียงพอสำหรับการทำ System Requirement ในส่วน access leave request creation
+      approval flow และ notification ในระดับ high-level แต่ยังไม่พร้อมสำหรับการออกแบบ data model
+      และ business rule โดยละเอียด จนกว่าจะได้รับคำตอบจาก QA List ระดับ High Priority
+
+final_verdict:
+  status: "Partially Ready"
+  main_reasons:
+    - "ข้อมูลมีความครบถ้วนในระดับ process และ actor สำหรับ core flow (Employee ยื่น → Manager อนุมัติ → Email แจ้งผล → HR ติดตาม)"
+    - "แต่ยังมีความขัดแย้ง 4 รายการ และข้อมูลสำคัญที่ขาดอยู่ 8 รายการ ซึ่งส่งผลโดยตรงต่อ data model, business rule และ validation logic"
+  risks:
+    - "หากเริ่มออกแบบ System Requirement โดยไม่ยืนยันประเด็น High Priority อาจต้องแก้ไข requirement ในภายหลัง โดยเฉพาะ leave balance structure, Outsource policy และ approval hierarchy"
+    - "ข้อขัดแย้งเรื่อง HRIS access อาจกระทบขอบเขตการ integrate กับระบบเดิม"
+  next_actions:
+    - "นำ QA List ระดับ High Priority (QA-H1 ถึง QA-H6) ไปยืนยันกับ Business Owner และ HR Manager ก่อน"
+    - "เมื่อได้คำตอบแล้ว อัปเดต YAML business requirements ให้ครบถ้วน"
+    - "จัดทำ Leave Type Matrix แสดงประเภทการลา สิทธิ์วันลา และเงื่อนไขแยกตามประเภทพนักงาน"
+    - "ยืนยัน approval flow diagram (1-level vs 2-level) และ notification recipients ก่อนออกแบบ workflow"

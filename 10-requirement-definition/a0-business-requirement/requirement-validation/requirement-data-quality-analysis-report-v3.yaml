@@ -1,0 +1,291 @@
+report:
+  title: "Requirement Data Quality Analysis Report"
+  version: "v3"
+  project: "ระบบบริหารการลาและการอนุมัติ — ABC Company"
+  analyzed_by: "Requirement Data Quality Analysis Agent"
+  reference_v2: "requirement-data-quality-analysis-report-v2.yaml"
+  qa_answers_v1_source: "requirement-data-quality-analysis-qa-list.yaml"
+  qa_answers_v2_source: "requirement-data-quality-analysis-qa-list-v2.yaml"
+  qa_answers_v2_status: "6/6 Closed"
+
+executive_summary:
+  total_files_analyzed: 7
+  overview: >
+    หลังได้รับคำตอบจาก HR Manager ครบทั้ง 6 รายการ (R1–R6) ข้อมูลทุกประเด็นสำคัญ
+    ได้รับการยืนยันและมีความสมบูรณ์เพียงพอสำหรับการออกแบบ System Requirement ครบถ้วน
+    ทั้ง core process, business rules, data model, leave quota, cancel/edit flow
+    และ notification design ยังพบประเด็น minor design decisions 3 รายการที่สามารถ
+    ตัดสินใจได้ระหว่างขั้นตอน design โดยไม่ blocking การเริ่มต้นเขียน requirement
+  conflicts_remaining: 0
+  ambiguous_remaining: 3
+  ambiguous_note: "Minor — ระดับ design decision เท่านั้น ไม่ต้องถาม Business Owner หรือ HR"
+  new_requirements_found: 3
+  readiness_level: "Ready"
+  summary_opinion: >
+    ข้อมูลพร้อมสำหรับการเริ่มจัดทำ System Requirement ได้ทันที
+    ประเด็น minor ที่เหลือ 3 รายการสามารถตัดสินใจได้โดยทีม BA/SA ระหว่าง design session
+    โดยไม่จำเป็นต้องรอคำตอบเพิ่มเติมจาก Business Owner หรือ HR Manager อีก
+
+source_files_reviewed:
+  - id: 1
+    filename: "ABC-Company-Leave-Form.md"
+    type: ".md"
+    role_in_v3: "ข้อมูลต้นทาง — แบบฟอร์มการยื่นใบลา"
+  - id: 2
+    filename: "ABC-Compay-HR-Regularion.md"
+    type: ".md"
+    role_in_v3: "ข้อมูลต้นทาง — ระเบียบ HR 17 หมวด"
+  - id: 3
+    filename: "ABC-Leave-Workflow-Thai-QA.md"
+    type: ".md"
+    role_in_v3: "ข้อมูลต้นทาง — บทสนทนา HR Q&A"
+  - id: 4
+    filename: "Leave-Management-Request-and-Approval-Business-User.yaml"
+    type: ".yaml"
+    role_in_v3: "ข้อมูลต้นทาง — Business Requirements หลัก"
+  - id: 5
+    filename: "ระบบบริหารการลาและการอนุมัติ.md"
+    type: ".md"
+    role_in_v3: "ข้อมูลต้นทาง — Presentation สรุป"
+  - id: 6
+    filename: "requirement-data-quality-analysis-qa-list.yaml"
+    type: ".yaml"
+    role_in_v3: "คำตอบ v1 จาก Business User (12/12 Closed)"
+  - id: 7
+    filename: "requirement-data-quality-analysis-qa-list-v2.yaml"
+    type: ".yaml"
+    role_in_v3: "ใหม่ใน v3 — คำตอบ v2 จาก HR Manager (6/6 Closed)"
+
+resolution_summary:
+  total_qa_rounds: 3
+  rounds:
+    - round: "v1"
+      respondent: "Business User"
+      total_qa: 12
+      fully_resolved: 6
+      partially_resolved: 6
+      status: "All Closed in v3"
+    - round: "v2"
+      respondent: "HR Manager"
+      total_qa: 6
+      fully_resolved: 6
+      partially_resolved: 0
+      status: "All Closed"
+  grand_total_qa: 18
+  grand_total_closed: 18
+
+v2_answers_summary:
+  - id: "R1"
+    topic: "สิทธิ์วันลากิจ"
+    answer_summary: "3 วัน/ปี ทั้งพนักงานประจำและ Outsource เท่ากัน"
+  - id: "R2"
+    topic: "สิทธิ์วันลา Outsource"
+    answer_summary: >
+      ลาป่วย/กิจ/พักผ่อน: เหมือนพนักงานประจำ
+      ลาคลอดบุตร/ทำหมัน/รับราชการ/อุปสมบท: ไม่มีสิทธิ์ (ใช้จากบริษัทต้นสังกัด)
+  - id: "R3"
+    topic: "Onboard Outsource"
+    answer_summary: "Import จาก Excel template — update ทุกต้นไตรมาส (7 fields บังคับ)"
+  - id: "R4"
+    topic: "Cancel/Edit rule"
+    answer_summary: >
+      Pending: ยกเลิกเองได้ทันที
+      Approved: หัวหน้า re-approve ภายใน 1 วันทำการ
+      Rejected: ยื่นใหม่ได้ทันที
+      คืนวันลา auto เมื่อยกเลิก Approved
+  - id: "R5"
+    topic: "HR Email scope"
+    answer_summary: "HR รับทุก event (ยื่น, Approve, Reject) + เพิ่ม event ใหม่: ยกเลิก Approved → แจ้ง HR"
+  - id: "R6"
+    topic: "ตารางสะสมวันลา"
+    leave_accumulation_table:
+      - tenure: "< 1 ปี"
+        days_per_year: 0
+        note: "ยังไม่มีสิทธิ์ ต้องผ่านทดลองงานก่อน"
+      - tenure: "1–3 ปี"
+        days_per_year: 10
+      - tenure: "3–5 ปี"
+        days_per_year: 12
+      - tenure: "5–10 ปี"
+        days_per_year: 15
+      - tenure: "10+ ปี"
+        days_per_year: 18
+    max_carry_over_cap: 30
+    tenure_start_rule: "นับจากวันเริ่มงานใน ABC (รวม Outsource)"
+
+duplicated_information:
+  note: "ไม่มีผลต่อ requirement readiness — ทุก conflict ได้รับการ resolve แล้ว"
+  items:
+    - id: "D1"
+      topic: "ประเภทการลา"
+      related_files: ["Leave-Form.md","HR-Regulation.md","QA.md","Leave-Management.yaml","PPTX.md"]
+      note_v3: "Resolved (C1) — ใช้รายการ 7 ประเภทจาก Business User เป็น canonical"
+    - id: "D2"
+      topic: "ใบรับรองแพทย์ลาป่วย > 3 วัน"
+      related_files: ["QA.md","PPTX.md"]
+      note_v3: "สอดคล้องกัน ยืนยันแล้ว"
+    - id: "D3"
+      topic: "Workflow การยื่นลา"
+      related_files: ["QA.md","Leave-Management.yaml","PPTX.md"]
+      note_v3: "Resolved (C3) — ใช้ YAML workflow (to-be) เป็น reference หลัก"
+
+conflicting_information:
+  note: "ไม่มีประเด็นขัดแย้งคงเหลือใน v3"
+  items:
+    - id: "C1"
+      topic: "รายการประเภทการลา"
+      status: "Resolved"
+      resolved_in: "v1"
+      resolved_value: "7 ประเภท ยืนยันโดย Business User"
+    - id: "C2"
+      topic: "ระยะเวลาแจ้งล่วงหน้าลาพักร้อน"
+      status: "Resolved"
+      resolved_in: "v1"
+      resolved_value: "1 วัน"
+    - id: "C3"
+      topic: "สถานะ HRIS ปัจจุบัน"
+      status: "Resolved"
+      resolved_in: "v1"
+      resolved_value: "Web App แยก integrate กับ HRIS เดิม ไม่ replace"
+    - id: "C4"
+      topic: "ข้อมูลลากิจ 45 วัน (ข้าราชการ)"
+      status: "Resolved"
+      resolved_in: "v2"
+      resolved_value: "ยืนยันว่าผิดพลาด สิทธิ์จริง = 3 วัน/ปี (R1)"
+
+ambiguous_or_incomplete:
+  note: "Minor design decisions — ทีม BA/SA ตัดสินใจได้เอง ไม่ต้องถาม Business Owner หรือ HR"
+  items:
+    - id: "M1"
+      topic: "สถานะ 'Cancelled' ในระบบ"
+      source_ref: "QA-list-v2 (R4)"
+      what_to_decide: "ใช้ชื่อ status ว่า 'Cancelled' หรือ 'Withdrawn' และ intermediate status ชื่ออะไร"
+      recommendation: "ใช้ 'Cancelled' สำหรับ final state และ 'Cancel Requested' สำหรับ pending re-approve"
+      impact: "ต่ำ — กระทบ status enum ในระบบ"
+    - id: "M2"
+      topic: "ระยะเวลาช่วงทดลองงานสำหรับ leave eligibility"
+      source_ref: "QA-list-v2 (R6)"
+      what_to_decide: "ระบบจะดึง probation end date จาก HRIS หรือคำนวณจาก hire_date + N เดือน"
+      recommendation: "ดึงจาก HRIS field หรือ config probation_months ใน system settings"
+      impact: "ต่ำ — กระทบ leave eligibility validation logic"
+    - id: "M3"
+      topic: "SLA Re-approve เมื่อครบ 1 วันทำการแล้วไม่มีการ action"
+      source_ref: "QA-list-v2 (R4)"
+      what_to_decide: "เมื่อหมดเวลา 1 วันทำการ ระบบจะ auto-approve, escalate ไป HR หรือ expire request"
+      recommendation: "ส่ง reminder ก่อนครบกำหนด 2 ชั่วโมง และ escalate ไปยัง HR หากหมดเวลา"
+      impact: "ต่ำ–กลาง — กระทบ SLA workflow design"
+
+new_requirements:
+  note: "Requirement ใหม่ที่พบจากคำตอบ HR Manager — ต้องเพิ่มใน Business Requirement ก่อน sign-off"
+  items:
+    - id: "NR1"
+      title: "Leave Balance Auto-Restore"
+      description: "ระบบต้องคืนวันลาคงเหลือโดยอัตโนมัติเมื่อคำขอที่ Approved ถูกยกเลิกสำเร็จ"
+      source_ref: "R4 (HR Manager)"
+      br_action: "เพิ่ม BR ใหม่: Leave Balance Auto-Restore on Cancellation"
+    - id: "NR2"
+      title: "Cancellation Notification Event"
+      description: "เพิ่ม Notification Event: ยกเลิก Approved → ส่ง Email แจ้งพนักงาน + หัวหน้างาน + HR"
+      source_ref: "R5 (HR Manager)"
+      br_action: "อัปเดต BR-005: เพิ่ม event 'Cancellation Approved'"
+    - id: "NR3"
+      title: "Outsource Leave Type Restriction"
+      description: >
+        Outsource ต้องมี employee_type ในระบบเพื่อ control สิทธิ์ลาบางประเภท
+        (ลาคลอดบุตร/ทำหมัน/รับราชการ/อุปสมบท = ไม่มีสิทธิ์)
+      source_ref: "R2 (HR Manager)"
+      br_action: "อัปเดต BR-008: เพิ่ม leave_type restriction ตาม employee_type"
+
+data_quality_assessment:
+  completeness:
+    level: "สูงมาก (93%)"
+    change_from_v2: "+21%"
+    reason: >
+      ข้อมูลครอบคลุม process, actor, business rule, leave types (7 ประเภท),
+      leave quota (ทุกประเภท + Outsource), notification events (4 events),
+      cancel flow, accumulation table (5 tiers + cap), onboard process
+      และ HRIS integration model ประเด็นที่ขาดเหลือ (M1–M3) เป็น design decisions
+  consistency:
+    level: "สูงมาก (95%)"
+    change_from_v2: "+10%"
+    reason: >
+      ทุก conflict ใน v1 และ v2 ได้รับการ resolve ครบถ้วน
+      ข้อมูลในทุกไฟล์สอดคล้องกัน ไม่มีความขัดแย้งที่ยังเปิดอยู่
+  clarity:
+    level: "สูงมาก (92%)"
+    change_from_v2: "+10%"
+    reason: >
+      Business rules ทุกข้อชัดเจน โดยเฉพาะ leave quota, cancel flow,
+      notification scope และ Outsource policy
+      ประเด็น M1–M3 ยังต้องการ naming/design decision แต่ไม่กระทบ clarity ของ business logic
+  traceability:
+    level: "สูงมาก (92%)"
+    change_from_v2: "+4%"
+    reason: >
+      ทุกข้อมูลสำคัญสามารถ trace กลับได้ถึง QA ID (C1–C4, A1–A8, R1–R6),
+      ไฟล์ต้นทาง และ respondent ชัดเจน
+      requirement ใหม่ NR1–NR3 trace กลับไปยัง R4, R5, R2 ได้โดยตรง
+  requirement_readiness:
+    level: "สูงมาก (90%)"
+    change_from_v2: "+12%"
+    reason: >
+      ข้อมูลพร้อมเริ่ม System Requirement ได้ทันที core flow, business rules,
+      data model, leave balance logic และ notification design มีข้อมูลครบ
+      ประเด็น M1–M3 เป็นเพียง detail ที่กำหนดได้ระหว่าง design session
+
+v1_to_v3_comparison:
+  - dimension: "Completeness"
+    v1: "60%"
+    v2: "72%"
+    v3: "93%"
+    total_delta: "+33%"
+  - dimension: "Consistency"
+    v1: "40%"
+    v2: "85%"
+    v3: "95%"
+    total_delta: "+55%"
+  - dimension: "Clarity"
+    v1: "65%"
+    v2: "82%"
+    v3: "92%"
+    total_delta: "+27%"
+  - dimension: "Traceability"
+    v1: "85%"
+    v2: "88%"
+    v3: "92%"
+    total_delta: "+7%"
+  - dimension: "Requirement Readiness"
+    v1: "55%"
+    v2: "78%"
+    v3: "90%"
+    total_delta: "+35%"
+  - dimension: "Final Verdict"
+    v1: "Partially Ready"
+    v2: "Partially Ready"
+    v3: "Ready"
+    total_delta: "Upgraded"
+
+final_verdict:
+  status: "Ready"
+  main_reasons:
+    - "ทุก conflict และ ambiguity ที่เป็น business-level ได้รับการ resolve ครบถ้วนใน 2 รอบ (18/18 QA Closed)"
+    - "ข้อมูลพร้อมสำหรับ System Requirement ทั้ง core flow, business rules, leave quota, cancel flow, notification design และ data model"
+    - "ประเด็นที่เหลือ 3 รายการ (M1–M3) เป็น design-level decisions ที่ทีม BA/SA ตัดสินใจได้เอง"
+  cautions:
+    - "Requirement ใหม่ 3 รายการ (NR1–NR3) ต้องเพิ่มใน Business Requirement ก่อน sign-off"
+    - "Outsource leave type restriction (R2) ต้องสะท้อนใน data model ผ่าน employee_type flag"
+  next_actions:
+    - action: "เริ่มจัดทำ System Requirement Document ได้เลย"
+      priority: "Immediate"
+    - action: "อัปเดต Business Requirement (NR1–NR3) ก่อน sign-off"
+      priority: "High"
+      detail: "BR-005 อัปเดต Cancellation event, BR-008 อัปเดต leave type restriction, BR ใหม่ Leave Balance Auto-Restore"
+    - action: "ตัดสินใจ design decisions M1–M3 ใน BA/SA workshop"
+      priority: "Medium"
+      detail: "Status naming, probation eligibility logic, SLA escalation rule"
+    - action: "ออกแบบ leave_type permission matrix แยกตาม employee_type"
+      priority: "Medium"
+      detail: "ประจำ: ครบ 7 ประเภท | Outsource: เฉพาะ ลาป่วย/กิจ/พักผ่อน"
+    - action: "กำหนด status machine diagram"
+      priority: "Medium"
+      detail: "Pending → Approved → Cancelled / Rejected → ยื่นใหม่"

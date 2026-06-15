@@ -1,0 +1,150 @@
+qa_list:
+  metadata:
+    title: "QA List v2 — ระบบบริหารการลาและการอนุมัติ (ABC Company)"
+    version: "v2"
+    source_report: "requirement-data-quality-analysis-report-v2.yaml"
+    target_respondent: "HR Manager"
+    note: "รายการคำถามคงเหลือหลังจาก Business User ตอบ QA List v1 ครบแล้ว (12/12 Closed)"
+    answer_summary: "6/6 Closed"
+
+  high_priority:
+    - id: "R1"
+      ref: "C4, A1"
+      topic: "สิทธิ์วันลากิจ (จำนวนวัน/ปี)"
+      question: "พนักงาน ABC Company มีสิทธิ์ลากิจได้กี่วันต่อปี?"
+      detail: >
+        ข้อมูล PPTX ที่ระบุ 45 วันสำหรับข้าราชการได้รับการยืนยันว่าผิดพลาด
+        กรุณาระบุจำนวนวันลากิจสูงสุดต่อปีที่ถูกต้องสำหรับพนักงาน ABC
+        และหากพนักงานประจำกับ Outsource มีสิทธิ์ต่างกัน ขอให้ระบุแยกด้วย
+      impact: "สูง — กระทบ leave quota data model และ validation rule ในระบบ"
+      answer: |
+        พนักงานประจำ ABC Company มีสิทธิ์ลากิจได้ 3 วัน/ปี
+        พนักงาน Outsource มีสิทธิ์เท่ากัน คือ 3 วัน/ปี
+        (ข้อมูล 45 วันใน PPTX เป็นสิทธิ์ข้าราชการ ไม่เกี่ยวกับ ABC Company)
+      answer_note: >
+        อ้างอิง HR Regulation ข้อ 7 กำหนดประเภทการลากิจไว้ แต่ไม่ระบุจำนวนวัน
+        ยืนยันจำนวน 3 วัน/ปี ตามนโยบายบริษัท — ทีม BA ใช้ค่านี้ในการออกแบบ leave quota ได้เลย
+      respondent: "HR Manager"
+      status: "Closed"
+
+    - id: "R2"
+      ref: "A2"
+      topic: "นโยบายสิทธิ์วันลาของพนักงาน Outsource"
+      question: "พนักงาน Outsource มีสิทธิ์วันลาแต่ละประเภทเท่ากับพนักงานประจำหรือแตกต่างกัน?"
+      detail: >
+        ระบบใหม่ต้องรองรับ Outsource ในระบบเดียวกับพนักงานประจำ
+        กรุณายืนยันว่าสิทธิ์วันลาของ Outsource (ลาป่วย, ลากิจ, ลาพักผ่อน ฯลฯ)
+        เหมือนหรือแตกต่างจากพนักงานประจำ และหากแตกต่างขอตารางสิทธิ์แยกต่างหาก
+      impact: "สูง — กระทบ leave balance calculation และ employee type data model"
+      answer: |
+        พนักงาน Outsource มีสิทธิ์วันลาเทียบเท่าพนักงานประจำในประเภทหลัก ดังนี้
+        - ลาป่วย: เหมือนกัน (ตามจริง, เกิน 3 วันมีใบแพทย์)
+        - ลากิจ: เหมือนกัน (3 วัน/ปี)
+        - ลาพักผ่อน: เหมือนกัน (10 วัน/ปี ขึ้นไปตามอายุงาน)
+        - ลาคลอดบุตร/ทำหมัน/รับราชการ/อุปสมบท: ไม่มีสิทธิ์ (ให้ใช้สิทธิ์จากบริษัทต้นสังกัด)
+      answer_note: >
+        Outsource ที่ทำงานในบริษัทนานกว่า 1 ปีให้นับอายุงานจากวันเริ่มงานใน ABC
+        สำหรับการคำนวณสิทธิ์วันลาพักผ่อน
+        ทีม BA โปรดแยก employee_type ในระบบเพื่อ control สิทธิ์ต่างกันได้
+      respondent: "HR Manager"
+      status: "Closed"
+
+  medium_priority:
+    - id: "R3"
+      ref: "A2"
+      topic: "Process onboard ข้อมูล Outsource เข้าระบบใหม่"
+      question: "HR จะนำข้อมูลพนักงาน Outsource เข้าระบบใหม่อย่างไร?"
+      detail: >
+        ปัจจุบัน Outsource ไม่อยู่ในระบบ HRIS เดิม HR ควบคุมด้วย Excel แยก
+        กรุณาระบุ process onboard ที่ต้องการ เช่น
+        - HR กรอกข้อมูล manual ในระบบใหม่
+        - Import จาก Excel template ที่กำหนด
+        - API เชื่อมกับบริษัทต้นสังกัด Outsource
+        และระบุว่าข้อมูลใดบ้างที่ต้องมี (ชื่อ, รหัส, แผนก, email ฯลฯ)
+      impact: "กลาง — กระทบ initial data migration และ user management design"
+      answer: |
+        เลือก process: (2) Import จาก Excel template
+        HR จะจัดทำ Excel template ส่งให้บริษัทต้นสังกัดกรอกข้อมูล แล้ว HR import เข้าระบบ
+        ข้อมูลที่ต้องมีในแต่ละ record:
+        - ชื่อ-นามสกุล (TH/EN)
+        - รหัสพนักงาน (กำหนดโดย HR)
+        - แผนก / ตำแหน่ง
+        - บริษัทต้นสังกัด
+        - Email (ใช้ login)
+        - วันเริ่มงานใน ABC
+        - หัวหน้างานโดยตรง (Line Manager)
+      answer_note: >
+        HR จะ update ข้อมูล Outsource ทุกต้นไตรมาสหรือเมื่อมีการเปลี่ยนแปลง
+        ทีม BA ควรออกแบบ import template และ validation ของระบบให้รองรับ bulk upload
+      respondent: "HR Manager"
+      status: "Closed"
+
+    - id: "R4"
+      ref: "A4"
+      topic: "Business Rule กรณียกเลิกคำขอลาที่ Approved แล้ว"
+      question: "หากพนักงานต้องการยกเลิกคำขอลาที่ได้รับการ Approved แล้ว ควรทำอย่างไร?"
+      detail: >
+        Proposed rule ที่เสนอไว้
+        - คำขอสถานะ Pending → พนักงานยกเลิกได้เอง
+        - คำขอสถานะ Approved → ต้องให้หัวหน้างาน re-approve การยกเลิก
+        - ไม่อนุญาตให้แก้ไขคำขอที่ Approved แล้ว ต้องยกเลิกและยื่นใหม่
+        กรุณายืนยันหรือแจ้งปรับเปลี่ยน flow ดังกล่าว
+      impact: "กลาง — กระทบ status transition design และ workflow routing"
+      answer: |
+        ยืนยัน Proposed Rule ตามที่เสนอ พร้อมเพิ่มเติมดังนี้
+        - Pending → พนักงานยกเลิกเองได้ทันที ไม่ต้องแจ้งหัวหน้า
+        - Approved → พนักงานส่งคำขอยกเลิก หัวหน้าต้อง re-approve ภายใน 1 วันทำการ
+        - ไม่อนุญาตให้แก้ไข (Edit) คำขอที่ Approved แล้ว ต้องยกเลิกแล้วยื่นใหม่เท่านั้น
+        - Rejected → พนักงานยื่นใหม่ได้ทันที ไม่ต้องยกเลิก
+      answer_note: >
+        กรณียกเลิกคำขอ Approved ระบบต้องคืนวันลาคงเหลือให้พนักงานโดยอัตโนมัติ
+        และส่ง Email แจ้งผลการยกเลิกให้ทั้งพนักงานและหัวหน้างาน
+      respondent: "HR Manager"
+      status: "Closed"
+
+    - id: "R5"
+      ref: "A6"
+      topic: "Scope HR สำหรับ Email notification"
+      question: "HR ต้องได้รับ Email notification ในทุก event หรือเฉพาะบาง event?"
+      detail: >
+        Event notification ที่กำหนดแล้ว
+        1) พนักงานยื่นลา → ส่งให้ หัวหน้างาน (ยืนยันแล้ว)
+        2) อนุมัติ (Approved) → ส่งให้ พนักงาน + HR (ยืนยันแล้ว)
+        3) ปฏิเสธ (Rejected) → ส่งให้ พนักงาน (ยืนยันแล้ว)
+        กรุณายืนยันว่า HR ต้องได้รับ Email ใน event ที่ 1 และ 3 ด้วยหรือไม่
+      impact: "กลาง — กระทบ notification design และ email template"
+      answer: |
+        HR ต้องได้รับ Email notification ทุก event ทั้ง 3 รายการ
+        1) ยื่นลา → HR รับด้วย (เพื่อ monitoring real-time)
+        2) Approved → HR รับด้วย (ยืนยันตามที่กำหนด)
+        3) Rejected → HR รับด้วย (เพื่อติดตามและช่วยพนักงานถ้าจำเป็น)
+        นอกจากนี้ขอเพิ่ม event: (4) ยกเลิกคำขอ Approved → แจ้ง HR ด้วย
+      answer_note: >
+        HR ใช้ Email เป็นช่องทาง monitoring แทน Excel เดิม
+        ทีม BA อาจพิจารณาให้ HR มี email group หรือ distribution list
+        เพื่อรับทุก notification แบบรวมศูนย์
+      respondent: "HR Manager"
+      status: "Closed"
+
+    - id: "R6"
+      ref: "A8"
+      topic: "ตารางสะสมวันลาพักผ่อนประจำปีตามอายุงาน"
+      question: "จำนวนวันลาพักผ่อนประจำปีเพิ่มขึ้นตามอายุงานอย่างไร?"
+      detail: >
+        เอกสารระบุว่า "ลาพักผ่อน 10 วัน/ปี สะสมได้ตามอายุงาน" แต่ไม่มีเกณฑ์ที่ชัดเจน
+        กรุณาระบุตารางการสะสมวันลา และจำนวนสูงสุด (cap) ที่สะสมได้
+      impact: "กลาง — กระทบ leave balance calculation logic"
+      answer: |
+        ตารางสิทธิ์วันลาพักผ่อนตามอายุงาน
+        - อายุงาน < 1 ปี  = ยังไม่มีสิทธิ์ (ต้องผ่านทดลองงานก่อน)
+        - อายุงาน 1–3 ปี  = 10 วัน/ปี
+        - อายุงาน 3–5 ปี  = 12 วัน/ปี
+        - อายุงาน 5–10 ปี = 15 วัน/ปี
+        - อายุงาน 10+ ปี  = 18 วัน/ปี
+        วันลาที่ไม่ได้ใช้สามารถสะสมข้ามปีได้ สูงสุด (cap) ไม่เกิน 30 วัน
+      answer_note: >
+        อายุงานนับจากวันที่บรรจุเป็นพนักงานประจำ (ไม่รวมช่วงทดลองงาน)
+        สำหรับ Outsource ให้นับจากวันเริ่มงานใน ABC Company
+        ทีม BA ใช้ตารางนี้ config leave balance calculation ได้เลย
+      respondent: "HR Manager"
+      status: "Closed"

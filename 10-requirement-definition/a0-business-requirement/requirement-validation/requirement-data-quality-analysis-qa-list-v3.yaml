@@ -1,0 +1,77 @@
+qa_list:
+  metadata:
+    title: "QA List v3 — ระบบบริหารการลาและการอนุมัติ (ABC Company)"
+    version: "v3"
+    source_report: "requirement-data-quality-analysis-report-v3.yaml"
+    target_respondent: "Business Owner / BA-SA Team"
+    note: >
+      รายการ design decisions คงเหลือหลังจาก HR Manager ตอบ QA List v2 ครบแล้ว (6/6 Closed)
+      ประเด็นเหล่านี้เป็น design-level decisions ที่ทีม BA/SA หรือ Business Owner ตัดสินใจได้
+      ไม่จำเป็นต้องรอข้อมูลเพิ่มเติมจากฝ่าย HR
+
+  low_priority:
+    - id: "M1"
+      ref: "R4"
+      topic: "ชื่อ Status สำหรับการยกเลิกคำขอลา"
+      question: "ระบบควรใช้ชื่อ status ใดสำหรับคำขอลาที่ถูกยกเลิก?"
+      detail: >
+        จาก Business Rule (R4) พบว่าระบบมี cancel flow 2 กรณี
+        กรณีที่ 1: Pending → พนักงานยกเลิกเองได้ทันที (สถานะ final คืออะไร?)
+        กรณีที่ 2: Approved → พนักงานส่งคำขอยกเลิก → หัวหน้า re-approve
+                   (สถานะระหว่างรอ re-approve คืออะไร? และ final state หลัง approve การยกเลิกคืออะไร?)
+        ตัวอย่างตัวเลือก:
+        - Final state: "Cancelled" / "Withdrawn" / "Revoked"
+        - Intermediate state: "Cancel Requested" / "Pending Cancellation"
+        กรุณาเลือกชื่อที่เหมาะสมและสอดคล้องกับ UX ของระบบ
+      recommendation: >
+        แนะนำ: Final state = "Cancelled", Intermediate = "Cancel Requested"
+        เพราะกระชับ เข้าใจง่าย และสอดคล้องกับ convention ทั่วไปของระบบ HR
+      impact: "ต่ำ — กระทบ status enum, label บนหน้าจอ และ Email template"
+      answer: "Cancelled"
+      note: ""
+      respondent: "HR Manager"
+      status: "Closed"
+
+    - id: "M2"
+      ref: "R6"
+      topic: "เกณฑ์ช่วงทดลองงานสำหรับ Leave Eligibility"
+      question: "ระบบจะตรวจสอบสิทธิ์ลาพักผ่อนในช่วงทดลองงานอย่างไร?"
+      detail: >
+        จาก HR Manager (R6) ระบุว่า อายุงาน < 1 ปี ยังไม่มีสิทธิ์ลาพักผ่อน
+        แต่ยังไม่ได้กำหนดว่า "ช่วงทดลองงาน" มีระยะเวลาเท่าใด
+        และระบบจะดึง / คำนวณค่านี้จากที่ใด
+        ตัวเลือกที่เป็นไปได้:
+        1) ดึง probation_end_date จาก HRIS master data โดยตรง
+        2) คำนวณจาก hire_date + N เดือน (config ค่าได้ในระบบ)
+        3) ใช้ confirmation_date (วันบรรจุจริง) แทน hire_date
+        กรุณาระบุ approach และระยะเวลาช่วงทดลองงานมาตรฐาน (เช่น 3 เดือน หรือ 6 เดือน)
+      recommendation: >
+        แนะนำ: ดึง probation_end_date จาก HRIS เพื่อความยืดหยุ่น
+        กรณี HRIS ไม่มี field นี้ ให้ config probation_months = 3 เดือน เป็นค่า default
+      impact: "ต่ำ — กระทบ leave eligibility validation และ leave balance display logic"
+      answer: "ให้ตรวจสอบอายุการทำงาน ถ้าไม่ถึง 3 เดือนไม่ให้ลา"
+      note: ""
+      respondent: "HR Manager"
+      status: "Closed"
+
+    - id: "M3"
+      ref: "R4"
+      topic: "SLA Action เมื่อหัวหน้างานไม่ Re-approve ภายในกำหนด"
+      question: "ระบบควรทำอะไรเมื่อหัวหน้างานไม่ดำเนินการ re-approve การยกเลิกภายใน 1 วันทำการ?"
+      detail: >
+        จาก Business Rule (R4) กำหนดว่าหัวหน้างานต้อง re-approve การยกเลิก
+        คำขอ Approved ภายใน 1 วันทำการ แต่ยังไม่ได้กำหนด action เมื่อหมดเวลา
+        ตัวเลือกที่เป็นไปได้:
+        1) Auto-Approve การยกเลิก → คืนวันลาให้พนักงานอัตโนมัติ
+        2) Escalate ไปยัง HR เพื่อดำเนินการแทน
+        3) Expire คำขอยกเลิก → พนักงานต้องยื่นคำขอยกเลิกใหม่
+        4) ส่ง Reminder Email ก่อนหมดเวลา (กี่ชั่วโมงก่อน?) + Escalate ถ้ายังไม่ action
+        กรุณาเลือก approach และระบุ timing ของ reminder (ถ้ามี)
+      recommendation: >
+        แนะนำ option 4: ส่ง reminder 2 ชั่วโมงก่อนครบกำหนด
+        และ escalate ไปยัง HR หากหมดเวลา (ไม่ auto-approve เพื่อป้องกันความผิดพลาด)
+      impact: "ต่ำ–กลาง — กระทบ SLA workflow, notification scheduler และ escalation design"
+      answer: "ส่ง Reminder 4 ชม. ก่อนหมดเวลา + Escalate"
+      note: ""
+      respondent: "HR Manager"
+      status: "Closed"
