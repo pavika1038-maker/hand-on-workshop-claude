@@ -1,0 +1,16 @@
+D:\Document Project\(5)LiXil\hand-on-workshop-claude\LeaveRequest\src\LeaveRequest.Application\bin\Release\net10.0\LeaveRequest.Application.deps.json
+D:\Document Project\(5)LiXil\hand-on-workshop-claude\LeaveRequest\src\LeaveRequest.Application\bin\Release\net10.0\LeaveRequest.Application.dll
+D:\Document Project\(5)LiXil\hand-on-workshop-claude\LeaveRequest\src\LeaveRequest.Application\bin\Release\net10.0\LeaveRequest.Application.pdb
+D:\Document Project\(5)LiXil\hand-on-workshop-claude\LeaveRequest\src\LeaveRequest.Application\bin\Release\net10.0\LeaveRequest.Domain.dll
+D:\Document Project\(5)LiXil\hand-on-workshop-claude\LeaveRequest\src\LeaveRequest.Application\bin\Release\net10.0\LeaveRequest.Domain.pdb
+D:\Document Project\(5)LiXil\hand-on-workshop-claude\LeaveRequest\src\LeaveRequest.Application\obj\Release\net10.0\LeaveRequest.Application.csproj.AssemblyReference.cache
+D:\Document Project\(5)LiXil\hand-on-workshop-claude\LeaveRequest\src\LeaveRequest.Application\obj\Release\net10.0\LeaveRequest.Application.GeneratedMSBuildEditorConfig.editorconfig
+D:\Document Project\(5)LiXil\hand-on-workshop-claude\LeaveRequest\src\LeaveRequest.Application\obj\Release\net10.0\LeaveRequest.Application.AssemblyInfoInputs.cache
+D:\Document Project\(5)LiXil\hand-on-workshop-claude\LeaveRequest\src\LeaveRequest.Application\obj\Release\net10.0\LeaveRequest.Application.AssemblyInfo.cs
+D:\Document Project\(5)LiXil\hand-on-workshop-claude\LeaveRequest\src\LeaveRequest.Application\obj\Release\net10.0\LeaveRequest.Application.csproj.CoreCompileInputs.cache
+D:\Document Project\(5)LiXil\hand-on-workshop-claude\LeaveRequest\src\LeaveRequest.Application\obj\Release\net10.0\LeaveRequest.Application.sourcelink.json
+D:\Document Project\(5)LiXil\hand-on-workshop-claude\LeaveRequest\src\LeaveRequest.Application\obj\Release\net10.0\LeaveReq.1B7A1B80.Up2Date
+D:\Document Project\(5)LiXil\hand-on-workshop-claude\LeaveRequest\src\LeaveRequest.Application\obj\Release\net10.0\LeaveRequest.Application.dll
+D:\Document Project\(5)LiXil\hand-on-workshop-claude\LeaveRequest\src\LeaveRequest.Application\obj\Release\net10.0\refint\LeaveRequest.Application.dll
+D:\Document Project\(5)LiXil\hand-on-workshop-claude\LeaveRequest\src\LeaveRequest.Application\obj\Release\net10.0\LeaveRequest.Application.pdb
+D:\Document Project\(5)LiXil\hand-on-workshop-claude\LeaveRequest\src\LeaveRequest.Application\obj\Release\net10.0\ref\LeaveRequest.Application.dll

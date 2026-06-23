@@ -1,0 +1,12 @@
+d:\Document Project\(5)LiXil\hand-on-workshop-claude\LeaveRequest\src\LeaveRequest.Domain\bin\Debug\net10.0\LeaveRequest.Domain.deps.json
+d:\Document Project\(5)LiXil\hand-on-workshop-claude\LeaveRequest\src\LeaveRequest.Domain\bin\Debug\net10.0\LeaveRequest.Domain.dll
+d:\Document Project\(5)LiXil\hand-on-workshop-claude\LeaveRequest\src\LeaveRequest.Domain\bin\Debug\net10.0\LeaveRequest.Domain.pdb
+d:\Document Project\(5)LiXil\hand-on-workshop-claude\LeaveRequest\src\LeaveRequest.Domain\obj\Debug\net10.0\LeaveRequest.Domain.GeneratedMSBuildEditorConfig.editorconfig
+d:\Document Project\(5)LiXil\hand-on-workshop-claude\LeaveRequest\src\LeaveRequest.Domain\obj\Debug\net10.0\LeaveRequest.Domain.AssemblyInfoInputs.cache
+d:\Document Project\(5)LiXil\hand-on-workshop-claude\LeaveRequest\src\LeaveRequest.Domain\obj\Debug\net10.0\LeaveRequest.Domain.AssemblyInfo.cs
+d:\Document Project\(5)LiXil\hand-on-workshop-claude\LeaveRequest\src\LeaveRequest.Domain\obj\Debug\net10.0\LeaveRequest.Domain.csproj.CoreCompileInputs.cache
+d:\Document Project\(5)LiXil\hand-on-workshop-claude\LeaveRequest\src\LeaveRequest.Domain\obj\Debug\net10.0\LeaveRequest.Domain.sourcelink.json
+d:\Document Project\(5)LiXil\hand-on-workshop-claude\LeaveRequest\src\LeaveRequest.Domain\obj\Debug\net10.0\LeaveRequest.Domain.dll
+d:\Document Project\(5)LiXil\hand-on-workshop-claude\LeaveRequest\src\LeaveRequest.Domain\obj\Debug\net10.0\refint\LeaveRequest.Domain.dll
+d:\Document Project\(5)LiXil\hand-on-workshop-claude\LeaveRequest\src\LeaveRequest.Domain\obj\Debug\net10.0\LeaveRequest.Domain.pdb
+d:\Document Project\(5)LiXil\hand-on-workshop-claude\LeaveRequest\src\LeaveRequest.Domain\obj\Debug\net10.0\ref\LeaveRequest.Domain.dll

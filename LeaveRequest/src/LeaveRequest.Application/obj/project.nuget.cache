@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "dgSpecHash": "fvjnOQqMWY0=",
+  "success": true,
+  "projectFilePath": "D:\\Document Project\\(5)LiXil\\hand-on-workshop-claude\\LeaveRequest\\src\\LeaveRequest.Application\\LeaveRequest.Application.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\73014839\\.nuget\\packages\\fluentvalidation\\12.1.1\\fluentvalidation.12.1.1.nupkg.sha512",
+    "C:\\Users\\73014839\\.nuget\\packages\\fluentvalidation.dependencyinjectionextensions\\12.1.1\\fluentvalidation.dependencyinjectionextensions.12.1.1.nupkg.sha512",
+    "C:\\Users\\73014839\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\10.0.9\\microsoft.extensions.dependencyinjection.abstractions.10.0.9.nupkg.sha512",
+    "C:\\Users\\73014839\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\10.0.9\\microsoft.extensions.logging.abstractions.10.0.9.nupkg.sha512",
+    "C:\\Users\\73014839\\.nuget\\packages\\microsoft.extensions.options\\10.0.9\\microsoft.extensions.options.10.0.9.nupkg.sha512",
+    "C:\\Users\\73014839\\.nuget\\packages\\microsoft.extensions.primitives\\10.0.9\\microsoft.extensions.primitives.10.0.9.nupkg.sha512"
+  ],
+  "logs": []
+}

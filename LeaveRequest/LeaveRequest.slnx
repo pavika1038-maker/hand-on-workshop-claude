@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/LeaveRequest.API/LeaveRequest.API.csproj" />
+    <Project Path="src/LeaveRequest.Application/LeaveRequest.Application.csproj" />
+    <Project Path="src/LeaveRequest.Domain/LeaveRequest.Domain.csproj" />
+    <Project Path="src/LeaveRequest.Infrastructure/LeaveRequest.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/LeaveRequest.Application.Tests/LeaveRequest.Application.Tests.csproj" />
+  </Folder>
+</Solution>
