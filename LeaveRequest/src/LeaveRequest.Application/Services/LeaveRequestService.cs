@@ -25,6 +25,9 @@ public class LeaveRequestService(
     public async Task<LeaveRequestResult> SubmitLeaveRequestAsync(
         string employeeId, CreateLeaveRequestDto request, CancellationToken ct = default)
     {
+        if (request.IsHalfDay && request.HalfDayPeriod is not ("AM" or "PM"))
+            throw new BusinessException("HalfDayPeriod ต้องเป็น AM หรือ PM เท่านั้น", "INVALID_HALF_DAY");
+
         var employee = await employeeRepo.GetByIdAsync(employeeId, ct)
             ?? throw new NotFoundException(nameof(Employee), employeeId);
         if (!employee.IsActive)
@@ -230,7 +233,7 @@ public class LeaveRequestService(
         if (lr.Status != LeaveStatus.Pending)
             throw new BusinessException($"ไม่สามารถอนุมัติคำร้องที่มีสถานะ '{lr.Status}'", "INVALID_STATUS");
 
-        if (lr.Employee.ManagerId != managerId)
+        if (string.IsNullOrWhiteSpace(managerId) || lr.Employee.ManagerId != managerId)
             throw new BusinessException("ไม่มีสิทธิ์อนุมัติคำร้องนี้", "FORBIDDEN");
 
         await using var tx = await unitOfWork.BeginTransactionAsync(ct);
@@ -278,6 +281,9 @@ public class LeaveRequestService(
     public async Task RejectAsync(
         Guid leaveRequestId, string managerId, string? comment, CancellationToken ct = default)
     {
+        if (string.IsNullOrWhiteSpace(comment))
+            throw new BusinessException("กรุณาระบุเหตุผลการปฏิเสธ", "REJECTION_REASON_REQUIRED");
+
         var lr = await leaveRequestRepo.GetByIdAsync(leaveRequestId, ct)
             ?? throw new NotFoundException(nameof(LeaveRequest), leaveRequestId);
 
