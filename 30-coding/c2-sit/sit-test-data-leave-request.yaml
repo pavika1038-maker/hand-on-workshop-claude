@@ -1,0 +1,491 @@
+# SIT Test Data — Leave Request and Approval
+# Generated from:
+#   - 10-requirement-definition/a0-business-requirement/req-summary/leave-request-and-approval-requirement-summary.md
+#   - 10-requirement-definition/b0-system-requriement/leave-request-and-approval-screen-srs.md
+#   - 20-system-design/b0-functional-design/leave-request-and-approval-sequence-diagram.md
+#   - 30-coding/c2-sit/sit-scenario-leave-request.md
+# Date: 2026-06-24
+
+module: "Leave Request and Approval"
+version: "1.0"
+created_date: "2026-06-16"
+reference_scenario_file: "30-coding/c2-sit/sit-scenario-leave-request.md"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MASTER DATA — ต้อง seed ก่อนเริ่ม SIT ทุก scenario
+# ─────────────────────────────────────────────────────────────────────────────
+master_data:
+  test_environment:
+    auth_method: "Mock Auth via X-Employee-Id header (ไม่ใช้ JWT จริง)"
+    base_url: "http://localhost:5000"
+    database: "SQLite (local SIT environment)"
+    email_notification: "Mock — ไม่ส่ง email จริง ตรวจผลจากตาราง NotificationLogs"
+
+  test_accounts:
+    - role: Employee
+      employee_id: EMP001
+      name: "สมชาย ใจดี"
+      auth_header: "X-Employee-Id: EMP001"
+      manager_id: EMP002
+      employee_type: Regular
+      hire_date: "2022-01-15"
+      service_years_approx: 4.4
+      leave_tier: "3–5 ปี → 12 วัน/ปี (ตาม req-summary §7.2)"
+      prerequisite: >
+        อายุงาน > 3 เดือน ผ่านทดลองงานแล้ว
+        มีสิทธิ์ Annual Leave / Sick Leave / Business Leave
+        ต้องมี ManagerId = EMP002 ใน DB
+
+    - role: Manager
+      employee_id: EMP002
+      name: "วิชัย รักงาน"
+      auth_header: "X-Employee-Id: EMP002"
+      manager_id: null
+      employee_type: Regular
+      prerequisite: >
+        เป็น Line Manager โดยตรงของ EMP001
+        (EmployeeId EMP001 มี ManagerId = EMP002 ใน DB)
+        ไม่มีหัวหน้างาน — ไม่ขึ้น Approval queue ของใคร
+
+    - role: HR
+      employee_id: EMP003
+      name: "นันทา พร้อมใจ"
+      auth_header: "X-Employee-Id: EMP003"
+      manager_id: EMP002
+      employee_type: Regular
+      prerequisite: >
+        มี role = HR ในระบบ
+        รับ notification ทุก event (ตรวจ NotificationLogs)
+
+  leave_balance_initial_state:
+    description: "ค่า balance ก่อนเริ่ม SIT — seed ลง LeaveBalances table"
+    note: "Remaining = EntitledDays + CarryForward - UsedDays - PendingDays"
+    data:
+      - employee_id: EMP001
+        leave_type_id: 1
+        leave_type_code: ANNUAL
+        leave_type_name: "ลาพักผ่อนประจำปี"
+        entitled_days: 12
+        carry_forward_days: 0
+        used_days: 2
+        pending_days: 0
+        remaining: 10
+        note: "remaining ≥ 3 เพื่อรองรับ SIT-001 (ลา 3 วัน)"
+
+      - employee_id: EMP001
+        leave_type_id: 2
+        leave_type_code: SICK
+        leave_type_name: "ลาป่วย"
+        entitled_days: 30
+        carry_forward_days: 0
+        used_days: 0
+        pending_days: 0
+        remaining: 30
+        note: "ลาป่วยตามจริง — ใช้ 30 วันเป็น placeholder ใน SIT"
+
+      - employee_id: EMP001
+        leave_type_id: 3
+        leave_type_code: PERSONAL
+        leave_type_name: "ลากิจส่วนตัว"
+        entitled_days: 3
+        carry_forward_days: 0
+        used_days: 0
+        pending_days: 0
+        remaining: 3
+        note: "3 วัน/ปี ทั้งประจำและ Outsource (ตาม req-summary §7.2 R1)"
+
+      - employee_id: EMP003
+        leave_type_id: 1
+        leave_type_code: ANNUAL
+        leave_type_name: "ลาพักผ่อนประจำปี"
+        entitled_days: 10
+        carry_forward_days: 0
+        used_days: 0
+        pending_days: 0
+        remaining: 10
+        note: "สำหรับ SIT-011 (HR ยื่นลา ขึ้น Manager Queue ของ EMP002)"
+
+  leave_type_reference:
+    - leave_type_id: 1
+      code: ANNUAL
+      name_th: "ลาพักผ่อนประจำปี"
+      advance_notice_working_days: 1
+      requires_medical_cert: false
+      available_for_outsource: true
+      srs_rules: "BR-003, VR-005"
+
+    - leave_type_id: 2
+      code: SICK
+      name_th: "ลาป่วย"
+      advance_notice_working_days: 0
+      requires_medical_cert: "true เมื่อ duration ≥ 3 วันทำการต่อเนื่อง"
+      available_for_outsource: true
+      srs_rules: "BR-005, BR-006, VR-007"
+
+    - leave_type_id: 3
+      code: PERSONAL
+      name_th: "ลากิจส่วนตัว"
+      advance_notice_working_days: 3
+      requires_medical_cert: false
+      available_for_outsource: true
+      srs_rules: "BR-004, VR-006"
+
+  balance_state_after_each_scenario:
+    description: "ตาราง tracking balance EMP001 (Annual Leave) หลังแต่ละ scenario"
+    columns: [stage, entitled_days, used_days, pending_days, remaining]
+    rows:
+      - [initial_seed,              12, 2, 0, 10]
+      - [after_SIT-001_submit,      12, 2, 3,  7]
+      - [after_SIT-002_approve,     12, 5, 0,  7]
+      - [after_SIT-003_new_pending, 12, 5, 2,  5]
+      - [after_SIT-003_reject,      12, 5, 0,  7]
+      - [after_SIT-004_no_change,   12, 5, 0,  7]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SCENARIOS
+# ─────────────────────────────────────────────────────────────────────────────
+scenarios:
+
+  # ───────────────────────────────────────────────
+  - scenario_id: SIT-001
+    scenario_name: "Employee submits leave request successfully"
+    reference_scenario_file_id: SIT-001
+    priority: High
+    business_flow: "SF-003 Submit Leave Request — Happy Path"
+    srs_trace: "SFR-003, VR-001, VR-003, VR-004, VR-005, VR-002, BR-003"
+
+    pre_conditions:
+      - "EMP001 login สำเร็จ"
+      - "Annual Leave remaining = 10 (ตาม initial seed)"
+      - "ไม่มีคำขอซ้อนทับในช่วง 2026-07-01 ถึง 2026-07-03"
+      - "2026-07-01 เป็นวันทำการ (ตรวจสอบ holiday calendar)"
+
+    test_users:
+      - role: Employee
+        employee_id: EMP001
+        auth_header: "X-Employee-Id: EMP001"
+        action: "กรอกและยื่นคำขอลา"
+
+    test_data:
+      - field: leave_type_id
+        value: 1
+        note: "Annual Leave — EMP001 Regular employee อายุงาน > 1 ปี มีสิทธิ์"
+      - field: start_date
+        value: "2026-07-01"
+        note: "อย่างน้อย 1 วันทำการล่วงหน้า (ตาม BR-003) — OK เพราะ today=2026-06-24"
+      - field: end_date
+        value: "2026-07-03"
+        note: "รวม 3 วันทำการ (พุธ-ศุกร์)"
+      - field: is_half_day
+        value: false
+      - field: half_day_period
+        value: null
+        note: "ไม่แสดง field นี้ (start_date ≠ end_date)"
+      - field: reason
+        value: "ท่องเที่ยวประจำปีกับครอบครัว"
+      - field: medical_certificate
+        value: null
+        note: "ไม่ต้องแนบ — leave_type = Annual ไม่ใช่ Sick"
+      - field: total_days_expected
+        value: 3
+        note: "คำนวณจาก start→end เฉพาะวันทำการ (ไม่รวมวันหยุด)"
+
+    expected_status: "Pending"
+    expected_result:
+      - "UI: redirect ไปหน้า Leave Request Detail แสดง Status = 'Pending Approval'"
+      - "UI: แสดง LeaveRequestRef เช่น LR-2026-xxxxx"
+      - "DB (LeaveRequests): record ใหม่ Status='Pending', DurationDays=3, EmployeeId='EMP001', LeaveTypeId=1"
+      - "DB (LeaveBalances EMP001 Annual): PendingDays 0 → 3, Remaining 10 → 7"
+      - "Notification: NotificationLogs มี record ส่งถึง EMP002 (Manager) + EMP003 (HR)"
+      - "API: HTTP 201 Created, body.status='Pending'"
+
+    evidence_points:
+      - "Screenshot ฟอร์มก่อนกด Submit (ข้อมูลครบถ้วน)"
+      - "Screenshot หน้า Leave Request Detail หลัง submit (Status=Pending)"
+      - "DB: SELECT * FROM LeaveRequests WHERE EmployeeId='EMP001' ORDER BY CreatedAt DESC LIMIT 1"
+      - "DB: SELECT PendingDays, UsedDays FROM LeaveBalances WHERE EmployeeId='EMP001' AND LeaveTypeId=1"
+
+  # ───────────────────────────────────────────────
+  - scenario_id: SIT-002
+    scenario_name: "Manager approves leave request"
+    reference_scenario_file_id: SIT-004
+    priority: High
+    business_flow: "SF-004 Manager Approval Inbox + SF-005 Approve Action"
+    srs_trace: "SFR-004, SFR-005, VR-010, BR-012, BR-013"
+
+    pre_conditions:
+      - "SIT-001 ผ่านแล้ว — มี LeaveRequest Status='Pending' ของ EMP001 ใน DB"
+      - "EMP002 (Manager) login สำเร็จ"
+      - "EMP001 ต้องมี ManagerId=EMP002 ใน DB (คำขอจึงปรากฏใน Inbox ของ EMP002)"
+
+    test_users:
+      - role: Manager
+        employee_id: EMP002
+        auth_header: "X-Employee-Id: EMP002"
+        action: "เข้า Approval Inbox → เลือกคำขอของ EMP001 → กด Approve"
+
+    test_data:
+      - field: leave_request_id
+        value: "{LeaveRequestId จากผลลัพธ์ SIT-001}"
+        note: "ดูจาก DB หรือ response body ของ SIT-001"
+      - field: approver_id
+        value: EMP002
+        note: "Line Manager โดยตรง — 1 ระดับ (BR-012)"
+      - field: rejection_reason
+        value: null
+        note: "ไม่กรอก — scenario นี้ Approve ไม่ใช่ Reject"
+
+    expected_status: "Approved"
+    expected_result:
+      - "UI (Manager Inbox): Status เปลี่ยนเป็น 'Approved' ทันที"
+      - "UI (Employee): EMP001 login เข้า Leave History เห็น Status='Approved'"
+      - "DB (LeaveRequests): Status='Approved', ApprovedBy='EMP002', ApprovalDate ไม่ null"
+      - "DB (LeaveBalances EMP001 Annual): PendingDays 3 → 0, UsedDays 2 → 5, Remaining=7"
+      - "Notification: NotificationLogs มี record ส่งถึง EMP001 + EMP003 (HR) event=Approved"
+      - "API: HTTP 200 OK"
+
+    evidence_points:
+      - "Screenshot Approval Inbox ก่อนกด Approve (เห็น request ของ EMP001)"
+      - "Screenshot หลัง Approve (Status=Approved ใน Inbox)"
+      - "Screenshot EMP001 เข้า Leave History เห็น Status=Approved"
+      - "DB: SELECT Status, ApprovedBy, ApprovalDate FROM LeaveRequests WHERE LeaveRequestId='{id}'"
+      - "DB: SELECT UsedDays, PendingDays, Remaining FROM LeaveBalances WHERE EmployeeId='EMP001' AND LeaveTypeId=1"
+
+  # ───────────────────────────────────────────────
+  - scenario_id: SIT-003
+    scenario_name: "Manager rejects leave request with reason"
+    reference_scenario_file_id: SIT-005
+    priority: High
+    business_flow: "SF-004 Manager Approval Inbox + SF-005 Reject Action"
+    srs_trace: "SFR-005, VR-010, BR-013"
+
+    pre_conditions:
+      - "ต้องมี LeaveRequest Status='Pending' ของ EMP001 อีกรายการ (แยกจาก SIT-001)"
+      - "ถ้า SIT-001 ถูก Approve ไปแล้วใน SIT-002 → ยื่นคำขอใหม่ด้วย new_leave_request ด้านล่าง"
+      - "EMP002 (Manager) login สำเร็จ"
+
+    test_users:
+      - role: Employee
+        employee_id: EMP001
+        auth_header: "X-Employee-Id: EMP001"
+        action: "ยื่นคำขอลาใหม่ (สร้าง Pending request เพื่อให้ Manager Reject)"
+      - role: Manager
+        employee_id: EMP002
+        auth_header: "X-Employee-Id: EMP002"
+        action: "เลือกคำขอใหม่ของ EMP001 → กด Reject → กรอกเหตุผล → Confirm"
+
+    test_data:
+      new_leave_request:
+        description: "ยื่นคำขอลาใหม่ก่อน (สร้าง Pending request ที่จะถูก Reject)"
+        fields:
+          - field: leave_type_id
+            value: 1
+            note: "Annual Leave — EMP001 ยังมี remaining = 7 (หลัง SIT-002)"
+          - field: start_date
+            value: "2026-07-08"
+            note: "ไม่ซ้อนทับกับ 2026-07-01 ถึง 2026-07-03 ที่ Approved ไปแล้ว"
+          - field: end_date
+            value: "2026-07-09"
+            note: "รวม 2 วัน (อังคาร-พุธ)"
+          - field: reason
+            value: "ทดสอบ SIT-003 ยื่นเพื่อให้ Manager Reject"
+
+      reject_action:
+        description: "ข้อมูลสำหรับ Reject action ของ Manager"
+        fields:
+          - field: leave_request_id
+            value: "{LeaveRequestId ของคำขอใหม่ข้างต้น}"
+          - field: rejection_reason
+            value: "ช่วงนั้นคนในทีมน้อยเกินไป ไม่สามารถอนุมัติได้"
+            note: >
+              Optional ตาม BR-013 แต่ SIT นี้ต้องกรอก
+              เพื่อตรวจว่า Employee เห็น reason ชัดเจน (ตาม DEF-006 lesson learned)
+
+    expected_status: "Rejected"
+    expected_result:
+      - "UI (Manager Inbox): Status เปลี่ยนเป็น 'Rejected'"
+      - "UI (Employee): EMP001 เข้า Leave History เห็น Status='Rejected'"
+      - "UI (Employee): แสดง Rejection Reason = 'ช่วงนั้นคนในทีมน้อยเกินไป ไม่สามารถอนุมัติได้' ชัดเจน"
+      - "DB (LeaveRequests): Status='Rejected', RejectedBy='EMP002', RejectionReason ไม่ null/empty"
+      - "DB (LeaveBalances EMP001 Annual): PendingDays คืนกลับ (ลด = 2), Remaining กลับ = 7"
+      - "Notification: NotificationLogs มี record ส่งถึง EMP001 + EMP003 (HR) event=Rejected พร้อม reason"
+      - "API: HTTP 200 OK"
+
+    evidence_points:
+      - "Screenshot Reject dialog (เห็น Rejection Reason ที่กรอก)"
+      - "Screenshot Manager Inbox หลัง Reject (Status=Rejected)"
+      - "Screenshot EMP001 เข้า Leave History เห็น Rejection Reason (DEF-006 check)"
+      - "DB: SELECT Status, RejectedBy, RejectionReason FROM LeaveRequests WHERE LeaveRequestId='{id}'"
+      - "DB: SELECT PendingDays, Remaining FROM LeaveBalances WHERE EmployeeId='EMP001' AND LeaveTypeId=1"
+
+  # ───────────────────────────────────────────────
+  - scenario_id: SIT-004
+    scenario_name: "System prevents submit when required data is missing"
+    reference_scenario_file_id: SIT-013
+    priority: High
+    business_flow: "SF-003 Submit Leave Request — Validation (Client-side + Server-side)"
+    srs_trace: "SFR-003, VR-005, VR-006, VR-007, ERR-LR-005, ERR-LR-006, ERR-LR-007"
+
+    pre_conditions:
+      - "EMP001 login สำเร็จ"
+      - "balance ไม่ต้องเปลี่ยน — ทุกกรณีไม่สร้าง record"
+
+    test_users:
+      - role: Employee
+        employee_id: EMP001
+        auth_header: "X-Employee-Id: EMP001"
+        action: "พยายาม submit โดยข้อมูลไม่ครบ / ไม่ผ่าน validation"
+
+    invalid_data:
+      # ────── CLIENT-SIDE VALIDATION (ไม่มี API call) ──────
+      - case_id: "SIT-004-C1"
+        test_case: "ไม่เลือกประเภทการลา"
+        validation_type: Client-side
+        input:
+          leave_type_id: null
+          start_date: null
+          end_date: null
+          reason: null
+        expected_error_code: REQUIRED_FIELD
+        expected_error_message_th: "กรุณาเลือกประเภทการลา"
+        expected_error_message_en: "Please select leave type"
+        expected_http_call: "ไม่มี — client block ก่อน submit"
+        expected_db_change: "ไม่มี LeaveRequest record ใหม่"
+
+      - case_id: "SIT-004-C2"
+        test_case: "เลือกประเภทลาแล้ว แต่ไม่กรอก Start Date"
+        validation_type: Client-side
+        input:
+          leave_type_id: 1
+          start_date: null
+          end_date: null
+          reason: null
+        expected_error_code: REQUIRED_FIELD
+        expected_error_message_th: "กรุณาระบุวันที่เริ่มลา"
+        expected_error_message_en: "Please specify start date"
+        expected_http_call: "ไม่มี — client block ก่อน submit"
+        expected_db_change: "ไม่มี LeaveRequest record ใหม่"
+
+      - case_id: "SIT-004-C3"
+        test_case: "กรอกครบทุก field แต่ไม่กรอก Reason"
+        validation_type: Client-side
+        input:
+          leave_type_id: 1
+          start_date: "2026-07-15"
+          end_date: "2026-07-15"
+          reason: ""
+        expected_error_code: REQUIRED_FIELD
+        expected_error_message_th: "กรุณาระบุเหตุผลการลา"
+        expected_error_message_en: "Please provide reason for leave"
+        expected_http_call: "ไม่มี — client block ก่อน submit"
+        expected_db_change: "ไม่มี LeaveRequest record ใหม่"
+
+      # ────── SERVER-SIDE VALIDATION (มี API call → HTTP 400) ──────
+      - case_id: "SIT-004-C4"
+        test_case: "Annual Leave start_date = วันนี้ (ไม่ได้แจ้งล่วงหน้า ≥ 1 วัน)"
+        validation_type: Server-side
+        srs_rule: "VR-005, BR-003"
+        input:
+          leave_type_id: 1
+          start_date: "2026-06-24"    # today — ต้องแจ้งล่วงหน้า ≥ 1 วัน
+          end_date: "2026-06-24"
+          reason: "ทดสอบ advance notice ไม่ครบ"
+        expected_error_code: ADVANCE_NOTICE_REQUIRED
+        expected_error_message_th: "ลาพักผ่อนต้องแจ้งล่วงหน้าอย่างน้อย 1 วัน"
+        expected_error_message_en: "Annual leave requires at least 1 day advance notice."
+        srs_message_ref: "ERR-LR-005"
+        expected_http_status: "400 Bad Request"
+        expected_db_change: "ไม่มี LeaveRequest record ใหม่"
+
+      - case_id: "SIT-004-C5"
+        test_case: "Business Leave start_date = พรุ่งนี้ (ไม่ครบ 3 วันทำการล่วงหน้า)"
+        validation_type: Server-side
+        srs_rule: "VR-006, BR-004"
+        input:
+          leave_type_id: 3
+          start_date: "2026-06-25"    # tomorrow — ต้องแจ้งล่วงหน้า ≥ 3 วันทำการ
+          end_date: "2026-06-25"
+          reason: "ทดสอบ Business Leave advance notice ไม่ครบ"
+        note: "3 วันทำการจาก 2026-06-24 = ต้องแจ้งล่วงหน้าถึงอย่างน้อย 2026-06-27 (ศุกร์)"
+        expected_error_code: ADVANCE_NOTICE_REQUIRED
+        expected_error_message_th: "ลากิจต้องแจ้งล่วงหน้าอย่างน้อย 3 วันทำการ"
+        expected_error_message_en: "Personal leave requires at least 3 working days advance notice."
+        srs_message_ref: "ERR-LR-006"
+        expected_http_status: "400 Bad Request"
+        expected_db_change: "ไม่มี LeaveRequest record ใหม่"
+
+      - case_id: "SIT-004-C6"
+        test_case: "Sick Leave 3 วัน ไม่แนบใบรับรองแพทย์"
+        validation_type: Server-side
+        srs_rule: "VR-007, BR-006"
+        input:
+          leave_type_id: 2
+          start_date: "2026-07-01"
+          end_date: "2026-07-03"    # 3 วันทำการต่อเนื่อง → บังคับแนบ
+          reason: "ทดสอบลาป่วย 3 วัน ไม่แนบใบแพทย์"
+          medical_certificate: null
+          total_days: 3
+        note: "ฟอร์มต้องแสดง field medical_certificate พร้อม label 'บังคับแนบ' เมื่อ total_days ≥ 3"
+        expected_error_code: MEDICAL_CERT_REQUIRED
+        expected_error_message_th: "กรุณาแนบใบรับรองแพทย์สำหรับการลาป่วย 3 วันขึ้นไป"
+        expected_error_message_en: "A medical certificate is required for sick leave of 3 or more consecutive working days."
+        srs_message_ref: "ERR-LR-007"
+        expected_http_status: "400 Bad Request"
+        expected_db_change: "ไม่มี LeaveRequest record ใหม่"
+
+    expected_status: "N/A — ไม่มีการสร้าง record"
+    expected_result:
+      - "ทุกกรณี (C1-C6): ไม่มี LeaveRequest record ใหม่ใน DB"
+      - "ทุกกรณี: LeaveBalances.PendingDays ไม่เปลี่ยนแปลง"
+      - "C1, C2, C3: UI แสดง error message ทันทีที่กด Submit ไม่มี spinner ค้าง ไม่มี API call"
+      - "C4, C5, C6: UI แสดง error message จาก API response ฟอร์มยังแสดงอยู่ให้แก้ไขได้"
+      - "C6: field medical_certificate ต้องปรากฏ (แสดงเมื่อ total_days ≥ 3 + leave_type=Sick)"
+
+    evidence_points:
+      - "Screenshot แต่ละกรณี C1-C6: แสดง error message ชัดเจนบนหน้าจอ"
+      - "Browser DevTools Network: C1-C3 ไม่มี API call ไป POST /api/v1/leave-requests"
+      - "Browser DevTools Network: C4-C6 เห็น HTTP 400 + error code ใน response body"
+      - "DB: SELECT COUNT(*) FROM LeaveRequests WHERE EmployeeId='EMP001' (ต้องไม่เพิ่มขึ้น)"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SUMMARY
+# ─────────────────────────────────────────────────────────────────────────────
+summary:
+  total_scenarios: 4
+  coverage:
+    - scenario_id: SIT-001
+      covers: "SF-003 Happy Path, VR-001, VR-002, VR-003, VR-004, VR-005"
+    - scenario_id: SIT-002
+      covers: "SF-004, SF-005 Approve, BR-012, balance deduction DEF-001"
+    - scenario_id: SIT-003
+      covers: "SF-005 Reject, BR-013, rejection reason visible to employee DEF-006"
+    - scenario_id: SIT-004
+      covers: "VR-005, VR-006, VR-007, client-side block, server-side 400 response"
+
+  scenario_dependency: |
+    SIT-001 (Submit Annual Leave)
+      └─→ SIT-002 (Manager Approve)
+    SIT-003 (Submit new + Reject) — ต้องยื่นคำขอใหม่ หลัง SIT-002 Approve ไปแล้ว
+    SIT-004 (Validation) — Independent ไม่ขึ้นกับ SIT อื่น
+
+  roles_required:
+    - role: Employee
+      employee_id: EMP001
+      used_in: [SIT-001, SIT-002_precondition, SIT-003, SIT-004]
+    - role: Manager
+      employee_id: EMP002
+      used_in: [SIT-002, SIT-003]
+
+  master_data_to_prepare:
+    - "Seed 3 accounts: EMP001 (Employee), EMP002 (Manager), EMP003 (HR)"
+    - "EMP001.ManagerId = EMP002, EMP003.ManagerId = EMP002"
+    - "Seed LeaveTypes (id=1 Annual, id=2 Sick, id=3 Personal) พร้อม advance_notice rules"
+    - "Seed LeaveBalances: EMP001 Annual remaining=10, Sick=30, Business=3"
+    - "ตรวจสอบว่า 2026-07-01, 2026-07-02, 2026-07-03, 2026-07-08, 2026-07-09 เป็นวันทำการ"
+    - "ตรวจสอบว่า 2026-06-25 ไม่นับเป็น 3 วันทำการล่วงหน้า (ใช้ใน SIT-004-C5)"
+
+  items_to_clarify:
+    - "Authentication method ยังไม่ยืนยัน (SSO vs standalone) — YAML นี้ใช้ X-Employee-Id header"
+    - "Holiday calendar ใน DB: ตรวจ 2026-07-01 ถึง 2026-07-09 ว่าไม่มีวันหยุดที่ต้องหลีกเลี่ยง"
+    - "Email notification: ตรวจจาก NotificationLogs table เท่านั้น (ไม่ส่ง email จริงใน SIT)"
+    - "DurationDays calculation: นับวันทำการเท่านั้น (ไม่รวมวันหยุด) — ต้องมี holiday calendar seed"
