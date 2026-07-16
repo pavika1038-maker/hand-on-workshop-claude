@@ -17,6 +17,14 @@ export interface LeaveType {
   typeNameTh?: string
   maxDaysPerYear?: number
   isAvailableForOutsource?: boolean
+  requiresMedicalCert?: boolean
+}
+
+export interface AttachmentSummary {
+  attachmentId: string
+  fileName: string
+  contentType: string
+  fileSize: number
 }
 
 export interface LeaveRequestSummary {
@@ -41,6 +49,7 @@ export interface LeaveRequestDetail extends LeaveRequestSummary {
   rejectedBy?: string
   rejectedAt?: string
   rejectionReason?: string
+  attachments?: AttachmentSummary[]
 }
 
 export interface PagedResult<T> {
@@ -65,6 +74,7 @@ export interface LeaveBalanceItem {
 export interface LeaveBalanceDashboard {
   employeeId: string
   leaveYear: number
+  isProbation?: boolean
   balances: LeaveBalanceItem[]
 }
 

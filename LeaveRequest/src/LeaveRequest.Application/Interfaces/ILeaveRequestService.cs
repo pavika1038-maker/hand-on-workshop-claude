@@ -22,6 +22,11 @@ public interface ILeaveRequestService
         Guid leaveRequestId,
         CancellationToken ct = default);
 
+    // SCR-005 (SF-013): audit trail timeline ของคำร้อง
+    Task<IReadOnlyList<TimelineEventDto>> GetTimelineAsync(
+        Guid leaveRequestId,
+        CancellationToken ct = default);
+
     // SCR-006: ยกเลิกคำร้อง (Pending → Cancelled ทันที; Approved → CancelRequest)
     Task<string> CancelAsync(
         Guid leaveRequestId,
@@ -58,6 +63,13 @@ public interface ILeaveRequestService
 
     // SCR-004: pending approvals list สำหรับ manager
     Task<PagedResult<PendingApprovalDto>> GetPendingByManagerAsync(
+        string managerId,
+        int page,
+        int pageSize,
+        CancellationToken ct = default);
+
+    // SCR-004 (SF-004): รายการที่ manager ดำเนินการแล้ว (Approved/Rejected)
+    Task<PagedResult<HrLeaveRequestDto>> GetProcessedByManagerAsync(
         string managerId,
         int page,
         int pageSize,

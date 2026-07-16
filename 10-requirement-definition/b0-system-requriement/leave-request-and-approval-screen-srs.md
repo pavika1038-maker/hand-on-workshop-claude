@@ -1,12 +1,12 @@
 ---
 title: "Screen SRS Document"
 document_type: "Screen SRS"
-version: "1.1"
+version: "1.2"
 language: "th"
 project: "ระบบบริหารการลาและการอนุมัติ (Leave Request and Approval)"
 company: "ABC Company"
 status: "Draft"
-last_updated: "2026-06-16"
+last_updated: "2026-07-15"
 ---
 
 # Screen SRS Document: ระบบบริหารการลาและการอนุมัติ (Leave Request and Approval)
@@ -17,6 +17,7 @@ last_updated: "2026-06-16"
 |---------|------|---------|-------------|-------------|--------|
 | 1.0 | 2026-06-16 | All | Created | สร้างเอกสารครั้งแรก — SF-001 ถึง SF-015 จาก SRS Summary baseline | SRS Summary v1.0 (BRD baseline) |
 | 1.1 | 2026-06-16 | SF-003 §2.3.5, §2.3.7 | Added | เพิ่ม field `half_day_period` ใน Leave Request Fields Definition และ Screen Behavior | Meeting Note 2026-06-10 |
+| 1.2 | 2026-07-15 | SF-012 §2.12.5, §2.12.6, §2.12.7 | Added | บันทึกกฎ threshold rollback ของ Excel import — record ผิด > 50% ของทั้งไฟล์ → rollback ทั้งไฟล์ (เพิ่ม BR-012-IMP, ERR-IMP-005); เดิมระบุ partial import อย่างเดียว ไม่มีกฎ rollback นี้ | Code review finding |
 
 ---
 
@@ -882,7 +883,7 @@ last_updated: "2026-06-16"
 | Name | Description | Trigger Condition | System Response |
 |------|------------|-----------------|----------------|
 | Upload | อัปโหลดไฟล์ Excel | เลือกไฟล์ | Validate format ไฟล์ → แสดง preview records |
-| Import | นำเข้าข้อมูลที่ validate ผ่าน | คลิก Import | Import records ที่ valid, แสดง result summary |
+| Import | นำเข้าข้อมูลที่ validate ผ่าน | คลิก Import | ถ้า record ผิด ≤ 50%: import เฉพาะ valid records + result summary; ถ้าผิด > 50%: rollback ทั้งไฟล์ (ไม่ import เลย) + ERR-IMP-005 (ดู BR-012-IMP) |
 | Download Template | ดาวน์โหลด template | คลิกลิงก์ | ดาวน์โหลดไฟล์ template เปล่า |
 
 #### 2.12.6 Message List
@@ -894,6 +895,7 @@ last_updated: "2026-06-16"
 | ERR-IMP-002 | Email ซ้ำ | แถวที่ {N}: Email นี้มีในระบบแล้ว | Row {N}: This email already exists in the system. |
 | ERR-IMP-003 | Line Manager ไม่พบในระบบ | แถวที่ {N}: ไม่พบรหัสหัวหน้างาน {ID} ในระบบ | Row {N}: Manager ID {ID} not found. |
 | ERR-IMP-004 | รูปแบบไฟล์ผิด | กรุณาอัปโหลดไฟล์ .xlsx เท่านั้น | Please upload .xlsx files only. |
+| ERR-IMP-005 | record ผิด > 50% ของทั้งไฟล์ → rollback ทั้งไฟล์ | นำเข้าไม่สำเร็จ: มีข้อผิดพลาดเกิน 50% ของรายการ — ยกเลิกการนำเข้าทั้งหมด กรุณาแก้ไขไฟล์แล้วลองใหม่ | Import failed: over 50% of rows have errors — the entire file was rolled back. Please fix and retry. |
 
 ##### Success Message
 | Message ID | Trigger | Message Text (TH) | Message Text (EN) |
@@ -905,7 +907,8 @@ last_updated: "2026-06-16"
 | Rule ID | Business Rule | System Impact | Source Reference |
 |--------|-------------|-------------|----------------|
 | BR-020 | Import via Excel template, 7 required fields | VR-013: validate ครบก่อน import | BRD BR-020, R3 (QA v2) |
-| — | ไม่ import record ที่มีข้อผิดพลาด — import เฉพาะ valid records | Partial import: valid rows เข้า, invalid rows report | SRS VR-013 |
+| — | import เฉพาะ valid records (partial import) เมื่อ record ผิด ≤ 50% | Partial import: valid rows เข้า, invalid rows report | SRS VR-013 |
+| BR-012-IMP | Threshold rollback: record ผิด > 50% ของทั้งไฟล์ → rollback ทั้งไฟล์ (ไม่ import แม้ valid rows) + ERR-IMP-005 | block partial import เมื่อ error สูง — ตรงกับ IF-003 BR-IF003-001 | Code review finding (พฤติกรรมจากโค้ด — threshold 50% ต้องให้ HR/BA ยืนยัน) |
 
 ---
 

@@ -1,9 +1,9 @@
 ---
 title: "SRS Change Log (Central Index)"
 document_type: "Change Log"
-version: "1.1"
+version: "1.2"
 language: "th"
-last_updated: "2026-04-17"
+last_updated: "2026-07-15"
 ---
 # SRS Change Log: Leave Request and Approval
 
@@ -59,6 +59,8 @@ last_updated: "2026-04-17"
 | 17 | 2026-04-17 | Interface SRS (v100) | 2.3 | Front-matter, File Path | Updated | Promote approved baseline จาก `v002` เป็น `v100` และย้ายไฟล์ไป `v100/` เพื่อใช้ต่อใน Function/System Design | Approval baseline for design handoff | Y |
 | 18 | 2026-04-17 | Non-Functional / Technical SRS (v100) | 2.8 | Front-matter, File Path | Updated | Promote approved baseline จาก `v002` เป็น `v100` และย้ายไฟล์ไป `v100/` เพื่อใช้ต่อใน Function/System Design | Approval baseline for design handoff | Y |
 | 19 | 2026-04-17 | Report SRS (v100) | 2.3 | Front-matter, File Path | Updated | Promote approved baseline จาก `v002` เป็น `v100` และย้ายไฟล์ไป `v100/` เพื่อใช้ต่อใน Function/System Design | Approval baseline for design handoff | Y |
+| 20 | 2026-07-15 | Interface SRS | 1.1 | 2.3.2, 2.3.6, 2.3.7, 2.3.8 (IF-003) | Added | บันทึกกฎ threshold rollback ของ Excel import Outsource — record ผิด > 50% ของทั้งไฟล์ → rollback ทั้งไฟล์ + HTTP 422 (BR-IF003-001, ERR-IF003-007); พฤติกรรมมีในโค้ด ImportService แต่เดิม SRS ไม่มี requirement รองรับ — threshold 50% ยังต้องให้ HR/BA ยืนยัน | Code review finding | Y |
+| 21 | 2026-07-15 | Screen SRS | 1.2 | SF-012 §2.12.5, §2.12.6, §2.12.7 | Added | บันทึกกฎ threshold rollback เดียวกันฝั่งหน้าจอ Import (BR-012-IMP, ERR-IMP-005) ให้สอดคล้องกับ IF-003 BR-IF003-001 | Code review finding | Y |
 
 ## Analysis Guide
 

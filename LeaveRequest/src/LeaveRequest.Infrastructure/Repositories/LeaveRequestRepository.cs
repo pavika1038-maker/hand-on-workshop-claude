@@ -52,6 +52,22 @@ public class LeaveRequestRepository(AppDbContext context) : ILeaveRequestReposit
         return (items, total);
     }
 
+    public async Task<(IReadOnlyList<LeaveRequest> Items, int Total)> GetProcessedByManagerAsync(
+        string managerId, int page, int pageSize, CancellationToken ct = default)
+    {
+        // SF-004: คำขอที่ Approve/Reject แล้วของ direct report — เรียงล่าสุดก่อน
+        var query = context.LeaveRequests
+            .Include(x => x.Employee)
+            .Include(x => x.LeaveType)
+            .Where(x => (x.Status == LeaveStatus.Approved || x.Status == LeaveStatus.Rejected)
+                     && x.Employee.ManagerId == managerId)
+            .OrderByDescending(x => x.UpdatedAt ?? x.CreatedAt);
+
+        var total = await query.CountAsync(ct);
+        var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
+        return (items, total);
+    }
+
     public async Task<(IReadOnlyList<CancelRequest> Items, int Total)> GetCancelRequestsByManagerAsync(
         string managerId, int page, int pageSize, CancellationToken ct = default)
     {

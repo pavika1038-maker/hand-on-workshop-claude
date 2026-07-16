@@ -13,6 +13,7 @@ export default function MainLayout() {
     { path: '/leave-history',  label: 'ประวัติการลา',        icon: '📅', roles: ['Employee','Manager','HR'] },
     { path: '/hr-dashboard',   label: 'HR Dashboard',         icon: '📊', roles: ['HR'] },
     { path: '/leave-report',   label: 'รายงานการลา',          icon: '📈', roles: ['HR'] },
+    { path: '/notification-log', label: 'Log การแจ้งเตือน',    icon: '📧', roles: ['HR'] },
     { path: '/settings',       label: 'ตั้งค่าระบบ',         icon: '⚙️', roles: ['HR'] },
   ].filter(item => !user?.role || item.roles.includes(user.role))
 

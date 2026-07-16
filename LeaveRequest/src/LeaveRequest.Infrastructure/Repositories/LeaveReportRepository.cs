@@ -57,4 +57,29 @@ public class LeaveReportRepository : ILeaveReportRepository
 
         return (items, total);
     }
+
+    // RP-001 (SF-014): date filter อิง StartDate ตาม report design §9 (LR.StartDate BETWEEN from AND to)
+    public async Task<IReadOnlyList<LeaveRequestEntity>> GetForSummaryAsync(
+        LeaveHistoryQuery query,
+        CancellationToken ct = default)
+    {
+        var q = _context.LeaveRequests
+            .AsNoTracking()
+            .Include(lr => lr.Employee)
+            .Include(lr => lr.LeaveType)
+            .AsQueryable();
+
+        if (query.StartDate.HasValue)
+            q = q.Where(lr => lr.StartDate >= query.StartDate.Value);
+        if (query.EndDate.HasValue)
+            q = q.Where(lr => lr.StartDate <= query.EndDate.Value);
+        if (query.LeaveTypeId.HasValue)
+            q = q.Where(lr => lr.LeaveTypeId == query.LeaveTypeId.Value);
+        if (query.Department is not null)
+            q = q.Where(lr => lr.Employee.Department == query.Department);
+        if (query.EmployeeType.HasValue)
+            q = q.Where(lr => lr.Employee.EmployeeType == query.EmployeeType.Value);
+
+        return await q.ToListAsync(ct);
+    }
 }

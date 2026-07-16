@@ -16,6 +16,14 @@ public class CancelRequestRepository(AppDbContext context) : ICancelRequestRepos
     public async Task AddAsync(CancelRequest cancelRequest, CancellationToken ct = default)
         => await context.CancelRequests.AddAsync(cancelRequest, ct);
 
+    // SF-013: cancel requests ที่ผูกกับคำขอลานี้ (audit timeline)
+    public async Task<IReadOnlyList<CancelRequest>> GetByLeaveRequestAsync(
+        Guid leaveRequestId, CancellationToken ct = default)
+        => await context.CancelRequests.AsNoTracking()
+            .Where(cr => cr.LeaveRequestId == leaveRequestId && !cr.IsDeleted)
+            .OrderBy(cr => cr.CreatedAt)
+            .ToListAsync(ct);
+
     // IF-005: only Pending records in the Reminder or Escalation window
     public async Task<IEnumerable<CancelRequest>> GetPendingForSlaCheckAsync(
         DateTime checkTime, CancellationToken ct = default)

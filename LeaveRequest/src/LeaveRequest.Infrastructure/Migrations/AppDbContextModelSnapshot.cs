@@ -61,6 +61,47 @@ namespace LeaveRequest.Infrastructure.Migrations
                     b.ToTable("ApprovalHistories", (string)null);
                 });
 
+            modelBuilder.Entity("LeaveRequest.Domain.Entities.Attachment", b =>
+                {
+                    b.Property<Guid>("AttachmentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(260)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("FileSize")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("LeaveRequestId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UploadedBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("AttachmentId");
+
+                    b.HasIndex("LeaveRequestId");
+
+                    b.ToTable("Attachments", (string)null);
+                });
+
             modelBuilder.Entity("LeaveRequest.Domain.Entities.CancelRequest", b =>
                 {
                     b.Property<Guid>("CancelRequestId")
@@ -916,6 +957,16 @@ namespace LeaveRequest.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("CancelRequest");
+
+                    b.Navigation("LeaveRequest");
+                });
+
+            modelBuilder.Entity("LeaveRequest.Domain.Entities.Attachment", b =>
+                {
+                    b.HasOne("LeaveRequest.Domain.Entities.LeaveRequest", "LeaveRequest")
+                        .WithMany()
+                        .HasForeignKey("LeaveRequestId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("LeaveRequest");
                 });

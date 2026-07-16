@@ -71,6 +71,7 @@ builder.Services.AddScoped<ILeaveBalanceRepository, LeaveBalanceRepository>();
 builder.Services.AddScoped<ILeaveBalanceService, LeaveBalanceService>();
 builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 builder.Services.AddScoped<IApprovalHistoryRepository, ApprovalHistoryRepository>();
+builder.Services.AddScoped<IAttachmentRepository, AttachmentRepository>();
 builder.Services.AddScoped<ILeaveRequestService, LeaveRequestService>();
 
 // RPT-001 — Leave History Report

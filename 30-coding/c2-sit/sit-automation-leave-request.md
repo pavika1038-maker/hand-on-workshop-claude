@@ -15,7 +15,7 @@
 
 ตรวจสอบทุกข้อก่อนเริ่มรัน automation:
 
-- [ ] Application ขึ้นที่ `http://localhost:5000` และ respond ปกติ
+- [ ] Application ขึ้นที่ `http://localhost:5173` และ respond ปกติ
 - [ ] SQLite DB seed data พร้อม: EMP001, EMP002, EMP003 ใน Employees table
 - [ ] EMP001.ManagerId = EMP002, EMP003.ManagerId = EMP002
 - [ ] LeaveBalances seed: EMP001 Annual remaining=10, Sick=30, Business=3
@@ -43,7 +43,7 @@
 
 | Step | Action | Target / Path | Input / Value | Checkpoint |
 |------|--------|---------------|---------------|------------|
-| 1 | `navigate` | `http://localhost:5000` | — | หน้าโหลดสำเร็จ ไม่มี 404/500 |
+| 1 | `navigate` | `http://localhost:5173` | — | หน้าโหลดสำเร็จ ไม่มี 404/500 |
 | 2 | `screenshot` | — | — | 📸 **EVD-001** หน้าแรกก่อน login |
 | 3 | `fill` | ช่อง "ชื่อผู้ใช้ / Username" | `EMP001` | ค่าปรากฏใน field |
 | 4 | `click` | ปุ่ม "Login" หรือ "เข้าสู่ระบบ" | — | — |
@@ -88,7 +88,7 @@
 
 ### Expected Final State — SIT-001
 
-- URL: `http://localhost:5000/leave-balance` หรือ `/leave-requests` (SCR-002)
+- URL: `http://localhost:5173/leave-balance` หรือ `/leave-requests` (SCR-002)
 - UI: card Annual Leave แสดง PendingDays=3, Remaining=7
 - DB Check (optional):
   ```sql
@@ -124,7 +124,7 @@
 
 | Step | Action | Target / Path | Input / Value | Checkpoint |
 |------|--------|---------------|---------------|------------|
-| 1 | `navigate` | `http://localhost:5000` | — | หน้าโหลดสำเร็จ |
+| 1 | `navigate` | `http://localhost:5173` | — | หน้าโหลดสำเร็จ |
 | 2 | `fill` | ช่อง "ชื่อผู้ใช้ / Username" | `EMP002` | ค่าปรากฏใน field |
 | 3 | `click` | ปุ่ม "Login" หรือ "เข้าสู่ระบบ" | — | — |
 | 4 | `wait` | Dashboard โหลด | max 5s | Login สำเร็จ |
@@ -148,7 +148,7 @@
 
 | Step | Action | Target / Path | Input / Value | Checkpoint |
 |------|--------|---------------|---------------|------------|
-| 18 | `navigate` | `http://localhost:5000` (logout แล้ว login ใหม่) | — | หน้า Login |
+| 18 | `navigate` | `http://localhost:5173` (logout แล้ว login ใหม่) | — | หน้า Login |
 | 19 | `fill` | ช่อง Username | `EMP001` | — |
 | 20 | `click` | ปุ่ม "Login" | — | — |
 | 21 | `wait` | หน้า Leave Balance Dashboard | max 5s | — |
@@ -223,7 +223,7 @@
 | # | Assumption | Impact ถ้าผิด |
 |---|-----------|--------------|
 | A1 | Mock Auth ทำงานผ่าน login form ที่รับ EmployeeId โดยตรง (ไม่ใช่ JWT จริง) | ต้องปรับ step 3–4 ถ้า auth mechanism ต่างออกไป |
-| A2 | URL base = `http://localhost:5000` | ปรับ URL ถ้า port หรือ host ต่างกัน |
+| A2 | URL base = `http://localhost:5173` | ปรับ URL ถ้า port หรือ host ต่างกัน |
 | A3 | Approval Inbox เข้าได้จาก menu navigation (ไม่ต้องพิมพ์ URL ตรง) | ปรับ step 6 ถ้า URL ตรงพร้อมใช้ |
 | A4 | ปุ่ม "Approve" แสดงบน row ของ Inbox โดยตรง (ไม่ต้องคลิกเข้าหน้า Detail ก่อน) | ถ้าต้อง navigate ไป Detail ก่อน ให้เพิ่ม step: click row → assert detail → click Approve |
 | A5 | Balance card แสดง UsedDays, PendingDays, Remaining แยกชัดเจน | ถ้า UI merge หรือ label ต่าง ให้ปรับ assert value |

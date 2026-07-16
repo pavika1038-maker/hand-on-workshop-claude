@@ -16,6 +16,7 @@ public class AppDbContext : DbContext, IUnitOfWork
     public DbSet<Entities.ImportLog> ImportLogs => Set<Entities.ImportLog>();
     public DbSet<Entities.CancelRequest> CancelRequests => Set<Entities.CancelRequest>();
     public DbSet<Entities.ApprovalHistory> ApprovalHistories => Set<Entities.ApprovalHistory>();
+    public DbSet<Entities.Attachment> Attachments => Set<Entities.Attachment>();
 
     public override async Task<int> SaveChangesAsync(CancellationToken ct = default)
         => await base.SaveChangesAsync(ct);

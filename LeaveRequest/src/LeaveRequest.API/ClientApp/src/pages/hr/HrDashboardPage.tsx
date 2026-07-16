@@ -28,6 +28,7 @@ const STATUS_OPTS = [
   { value: 'Rejected',        label: 'ปฏิเสธ' },
   { value: 'Cancelled',       label: 'ยกเลิกแล้ว' },
   { value: 'CancelRequested', label: 'ขอยกเลิก' },
+  { value: 'Escalated',       label: 'Escalated (เกิน SLA)' },
 ]
 
 export default function HrDashboardPage() {

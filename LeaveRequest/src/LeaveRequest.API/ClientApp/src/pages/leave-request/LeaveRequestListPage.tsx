@@ -1,10 +1,11 @@
 // SCR-003: Submit Leave Request + My Requests List (SFR-003, SFR-006, SFR-007)
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { apiGet, apiPost, apiFetch } from '../../api'
+import { apiGet, apiPost, apiUploadFile } from '../../api'
 import type { ApiResponse, LeaveType, LeaveRequestSummary, CreateLeaveRequestBody, PagedResult } from '../../types/leaveRequest'
 import { STATUS_CONFIG, formatDate } from '../../types/leaveRequest'
+import CancelLeaveModal, { type CancelTarget } from '../../components/shared/CancelLeaveModal'
 
 const PAGE_SIZE = 10
 
@@ -38,15 +39,23 @@ export default function LeaveRequestListPage() {
   const [reason, setReason]           = useState('')
   const [isHalfDay, setIsHalfDay]     = useState(false)
   const [halfDayPeriod, setHalfDayPeriod] = useState<'AM' | 'PM'>('AM')
+  const [certFile, setCertFile]       = useState<File | null>(null)
+  const certInputRef = useRef<HTMLInputElement>(null)
   const [submitting, setSubmitting]   = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitErrors, setSubmitErrors] = useState<string[]>([])
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null)
 
-  // Cancel
-  const [cancellingId, setCancellingId] = useState<string | null>(null)
+  // Cancel (SF-007 / SF-008 — via modal)
+  const [cancelTarget, setCancelTarget] = useState<CancelTarget | null>(null)
+  const [cancelSuccess, setCancelSuccess] = useState<string | null>(null)
 
   const durationDays = useMemo(() => calcDays(startDate, endDate), [startDate, endDate])
+  const selectedLeaveType = useMemo(
+    () => leaveTypes.find(lt => lt.leaveTypeId === Number(leaveTypeId)),
+    [leaveTypes, leaveTypeId])
+  // VR-007 / BR-006: ลาที่ต้องใบรับรองแพทย์ ตั้งแต่ 3 วันขึ้นไป ต้องแนบไฟล์
+  const certRequired = !!selectedLeaveType?.requiresMedicalCert && durationDays >= 3
 
   // Load leave types
   useEffect(() => {
@@ -92,19 +101,36 @@ export default function LeaveRequestListPage() {
     if (!endDate)              errs.push('กรุณาระบุวันสิ้นสุด')
     if (!reason.trim())        errs.push('กรุณาระบุเหตุผลการลา')
     if (startDate && endDate && endDate < startDate) errs.push('วันสิ้นสุดต้องไม่ก่อนวันเริ่มลา')
+    if (certRequired && !certFile) errs.push('การลานี้ตั้งแต่ 3 วันขึ้นไป ต้องแนบใบรับรองแพทย์')
     if (errs.length) { setSubmitErrors(errs); return }
 
     setSubmitting(true)
     try {
+      // IF-004: upload ใบรับรองแพทย์ก่อน แล้วแนบ id เข้าคำขอลา
+      let attachmentIds: string[] = []
+      if (certFile) {
+        const form = new FormData()
+        form.append('file', certFile)
+        const uploadRes = await apiUploadFile('/api/v1/attachments', form)
+        const uploadJson = await uploadRes.json() as ApiResponse<{ attachmentId: string }>
+        if (!uploadRes.ok || !uploadJson.success || !uploadJson.data) {
+          setSubmitError(uploadJson.message ?? 'อัปโหลดใบรับรองแพทย์ไม่สำเร็จ')
+          setSubmitting(false)
+          return
+        }
+        attachmentIds = [uploadJson.data.attachmentId]
+      }
+
       const body: CreateLeaveRequestBody = {
         leaveTypeId: Number(leaveTypeId), startDate, endDate,
         isHalfDay, halfDayPeriod: isHalfDay ? halfDayPeriod : undefined,
-        reason: reason.trim(), attachmentIds: [],
+        reason: reason.trim(), attachmentIds,
       }
       const json = await apiPost<ApiResponse<{ leaveRequestRef?: string }>>('/api/v1/leave-requests', body)
       if (json.success) {
         setSubmitSuccess(`ยื่นคำร้องสำเร็จ${json.data?.leaveRequestRef ? ` (${json.data.leaveRequestRef})` : ''}`)
         setLeaveTypeId(''); setStartDate(''); setEndDate(''); setReason(''); setIsHalfDay(false); setHalfDayPeriod('AM')
+        setCertFile(null); if (certInputRef.current) certInputRef.current.value = ''
         setPage(1); setRefreshVer(v => v + 1)
       } else {
         setSubmitError(json.message ?? 'ยื่นคำร้องไม่สำเร็จ')
@@ -117,28 +143,12 @@ export default function LeaveRequestListPage() {
     }
   }
 
-  // Cancel (SCR-006)
-  const handleCancel = async (req: LeaveRequestSummary) => {
-    const confirmMsg = req.status === 'Approved'
-      ? `คำร้องนี้อนุมัติแล้ว ต้องการส่งคำขอยกเลิกให้ Manager อนุมัติใช่ไหม?`
-      : `ยืนยันการยกเลิกคำร้อง ${req.leaveRequestRef}?`
-    if (!window.confirm(confirmMsg)) return
-    setCancellingId(req.leaveRequestId)
-    try {
-      const json = await (await apiFetch(`/api/v1/leave-requests/${req.leaveRequestId}/cancel`, {
-        method: 'PATCH',
-        body: JSON.stringify({ comment: null }),
-      })).json() as ApiResponse<unknown>
-      if (json.success) {
-        setPage(1); setRefreshVer(v => v + 1)
-      } else {
-        alert(json.message ?? 'ยกเลิกไม่สำเร็จ')
-      }
-    } catch {
-      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ')
-    } finally {
-      setCancellingId(null)
-    }
+  // Cancel (SCR-006) — เปิด modal เพื่อกรอกเหตุผล (SF-007/SF-008)
+  const handleCancelSuccess = (message: string) => {
+    setCancelTarget(null)
+    setCancelSuccess(message)
+    setPage(1); setRefreshVer(v => v + 1)
+    setTimeout(() => setCancelSuccess(null), 4000)
   }
 
   const canCancel = (status: string) => status === 'Pending' || status === 'Approved'
@@ -150,6 +160,8 @@ export default function LeaveRequestListPage() {
         <span style={s.crumbSep}>›</span>
         <span>ยื่นคำร้องขอลา</span>
       </nav>
+
+      {cancelSuccess && <div style={s.successBanner}>{cancelSuccess}</div>}
 
       {/* Submit form */}
       <section style={s.card}>
@@ -203,6 +215,30 @@ export default function LeaveRequestListPage() {
               onChange={e => setReason(e.target.value)} placeholder="ระบุเหตุผลการลา" disabled={submitting} />
             <small style={{ color: 'var(--color-text-muted)', fontSize: 11 }}>{reason.length}/500</small>
           </div>
+
+          {/* SF-003 / IF-004: แนบใบรับรองแพทย์ (แสดงเมื่อประเภทลาต้องใช้) */}
+          {selectedLeaveType?.requiresMedicalCert && (
+            <div style={{ ...s.field, marginTop: 12 }}>
+              <label style={s.label}>
+                ใบรับรองแพทย์ {certRequired && <span style={{ color: 'var(--color-danger)' }}>*</span>}
+                <span style={{ fontWeight: 400, color: 'var(--color-text-muted)' }}> (PDF, JPG, PNG — ไม่เกิน 5 MB)</span>
+              </label>
+              <input
+                ref={certInputRef}
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                onChange={e => setCertFile(e.target.files?.[0] ?? null)}
+                disabled={submitting}
+                style={{ fontSize: 13 }}
+              />
+              {certRequired && !certFile && (
+                <small style={{ color: 'var(--color-danger)', fontSize: 11 }}>
+                  การลานี้ตั้งแต่ 3 วันขึ้นไป ต้องแนบใบรับรองแพทย์ก่อนยื่น
+                </small>
+              )}
+            </div>
+          )}
+
           {(submitError || submitErrors.length > 0) && (
             <div style={s.errorBox}>
               {submitError && <p style={{ fontWeight: 600, margin: 0 }}>{submitError}</p>}
@@ -243,7 +279,6 @@ export default function LeaveRequestListPage() {
               <tbody>
                 {requests.map(req => {
                   const cfg = STATUS_CONFIG[req.status] ?? STATUS_CONFIG.Cancelled
-                  const busy = cancellingId === req.leaveRequestId
                   return (
                     <tr key={req.leaveRequestId} style={s.tr}>
                       <td style={s.td}>{req.leaveTypeName}</td>
@@ -265,12 +300,18 @@ export default function LeaveRequestListPage() {
                         {formatDate(req.createdAt)}
                       </td>
                       <td style={s.td}>
-                        {canCancel(req.status) && (
-                          <button style={{ ...s.btnDanger, opacity: busy ? 0.6 : 1 }}
-                            disabled={busy} onClick={() => handleCancel(req)}>
-                            {busy ? '...' : 'ยกเลิก'}
-                          </button>
-                        )}
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                          <Link to={`/leave-requests/${req.leaveRequestId}`} style={s.btnDetail}>รายละเอียด</Link>
+                          {canCancel(req.status) && (
+                            <button style={s.btnDanger} onClick={() => setCancelTarget({
+                              leaveRequestId: req.leaveRequestId,
+                              leaveRequestRef: req.leaveRequestRef,
+                              status: req.status,
+                            })}>
+                              ยกเลิก
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )
@@ -287,6 +328,14 @@ export default function LeaveRequestListPage() {
           </div>
         )}
       </section>
+
+      {cancelTarget && (
+        <CancelLeaveModal
+          target={cancelTarget}
+          onClose={() => setCancelTarget(null)}
+          onSuccess={handleCancelSuccess}
+        />
+      )}
     </div>
   )
 }
@@ -306,7 +355,9 @@ const s: Record<string, React.CSSProperties> = {
   errorBox: { backgroundColor: '#fde8e8', border: '1px solid #fca5a5', borderRadius: 4, padding: '10px 14px', fontSize: 13, color: '#dc2626', marginTop: 12 },
   successBox: { backgroundColor: '#e8f5e9', border: '1px solid #86efac', borderRadius: 4, padding: '10px 14px', fontSize: 13, color: '#15803d', marginTop: 12 },
   btnPrimary: { padding: '9px 22px', backgroundColor: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 4, fontSize: 13, fontWeight: 500, minWidth: 100, cursor: 'pointer' },
-  btnDanger:  { padding: '4px 10px', backgroundColor: 'transparent', color: '#dc2626', border: '1px solid #dc2626', borderRadius: 4, fontSize: 12, cursor: 'pointer' },
+  btnDanger:  { padding: '4px 10px', backgroundColor: 'transparent', color: '#dc2626', border: '1px solid #dc2626', borderRadius: 4, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap' },
+  btnDetail:  { padding: '4px 10px', backgroundColor: 'transparent', color: 'var(--color-primary)', border: '1px solid var(--color-primary)', borderRadius: 4, fontSize: 12, textDecoration: 'none', whiteSpace: 'nowrap' },
+  successBanner: { backgroundColor: '#e8f5e9', border: '1px solid #86efac', borderRadius: 6, padding: '10px 16px', fontSize: 13, color: '#15803d', marginBottom: 12 },
   btnLink:    { background: 'none', border: 'none', color: 'var(--color-primary)', textDecoration: 'underline', fontSize: 13, cursor: 'pointer', padding: '0 4px' },
   countBadge: { fontSize: 12, backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)', borderRadius: 10, padding: '2px 10px' },
   center: { display: 'flex', justifyContent: 'center', padding: '32px 0', color: 'var(--color-text-muted)', fontSize: 14 },

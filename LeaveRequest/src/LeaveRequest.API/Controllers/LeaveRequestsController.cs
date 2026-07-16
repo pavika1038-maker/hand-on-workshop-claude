@@ -39,6 +39,14 @@ public class LeaveRequestsController(ILeaveRequestService service) : ControllerB
         return Ok(ApiResponse<LeaveRequestDetailDto>.Ok(result));
     }
 
+    /// <summary>Audit trail timeline ของคำร้อง (SCR-005, SF-013)</summary>
+    [HttpGet("{id:guid}/timeline")]
+    public async Task<IActionResult> GetTimeline(Guid id, CancellationToken ct)
+    {
+        var result = await service.GetTimelineAsync(id, ct);
+        return Ok(ApiResponse<IReadOnlyList<TimelineEventDto>>.Ok(result));
+    }
+
     /// <summary>ยื่นคำร้องขอลา (SCR-003 submit, SFR-003)</summary>
     [HttpPost]
     public async Task<IActionResult> SubmitLeaveRequest(

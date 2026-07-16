@@ -1,0 +1,18 @@
+scenario_id: SIT-001
+run_id: SIT-001-run-001
+scenario_name: "Employee submits leave request successfully"
+date: ""
+environment: ""
+base_url: "http://localhost:5173"
+executed_by: "leave-request-sit-execution-agent"
+test_data_file: "30-coding/c2-sit/sit-test-data-leave-request.yaml"
+result: ""  # PASS / FAIL / BLOCKED
+defect_ids: []
+evidence:
+  - step: "login"
+    file: "step01-login.png"
+  - step: "submit"
+    file: "step03-submit.png"
+  - step: "result"
+    file: "step04-result.png"
+notes: ""

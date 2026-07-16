@@ -16,6 +16,7 @@ public class LeaveRequestService(
     ILeaveTypeRepository leaveTypeRepo,
     ICancelRequestRepository cancelRequestRepo,
     IApprovalHistoryRepository approvalHistoryRepo,
+    IAttachmentRepository attachmentRepo,
     IUnitOfWork unitOfWork,
     ILogger<LeaveRequestService> logger
 ) : ILeaveRequestService
@@ -42,6 +43,12 @@ public class LeaveRequestService(
         var durationDays = request.IsHalfDay
             ? 0.5m
             : (decimal)(request.EndDate.DayNumber - request.StartDate.DayNumber + 1);
+
+        // VR-007 / BR-006: ลาที่ต้องใบรับรองแพทย์ (เช่น ลาป่วย) ตั้งแต่ 3 วันขึ้นไป ต้องแนบไฟล์
+        // ponytail: ใช้ durationDays (calendar span) แทน working-day count — ยกระดับเป็นวันทำการเมื่อ business ยืนยันนิยาม
+        if (leaveType.RequiresMedicalCert && durationDays >= 3 && request.AttachmentIds.Count == 0)
+            throw new BusinessException(
+                $"การลา '{leaveType.TypeNameTh}' ตั้งแต่ 3 วันขึ้นไป ต้องแนบใบรับรองแพทย์", "VR-007");
 
         if (leaveType.MaxDaysPerYear.HasValue)
         {
@@ -82,6 +89,17 @@ public class LeaveRequestService(
         try
         {
             await leaveRequestRepo.AddAsync(entity, ct);
+
+            // IF-004: link ไฟล์แนบ (upload มาก่อนแล้ว) เข้ากับคำขอลานี้
+            if (request.AttachmentIds.Count > 0)
+            {
+                var attachments = await attachmentRepo.GetByIdsAsync(request.AttachmentIds, ct);
+                foreach (var att in attachments)
+                {
+                    att.LeaveRequestId = entity.LeaveRequestId;
+                    attachmentRepo.Update(att);
+                }
+            }
 
             if (leaveType.MaxDaysPerYear.HasValue)
             {
@@ -137,6 +155,7 @@ public class LeaveRequestService(
     {
         var r = await leaveRequestRepo.GetByIdAsync(id, ct)
             ?? throw new NotFoundException(nameof(LeaveRequest), id);
+        var attachments = await attachmentRepo.GetByLeaveRequestAsync(id, ct);
         return new LeaveRequestDetailDto(
             r.LeaveRequestId,
             r.LeaveRequestRef,
@@ -155,8 +174,66 @@ public class LeaveRequestService(
             r.RejectedBy,
             r.RejectedAt,
             r.RejectionReason,
-            r.CreatedAt
+            r.CreatedAt,
+            attachments.Select(a => new AttachmentSummaryDto(
+                a.AttachmentId, a.FileName, a.ContentType, a.FileSize)).ToList()
         );
+    }
+
+    // ── Audit Trail Timeline (SCR-005 / SF-013) ───────────────────────────────
+
+    public async Task<IReadOnlyList<TimelineEventDto>> GetTimelineAsync(
+        Guid leaveRequestId, CancellationToken ct = default)
+    {
+        var lr = await leaveRequestRepo.GetByIdAsync(leaveRequestId, ct)
+            ?? throw new NotFoundException(nameof(LeaveRequest), leaveRequestId);
+
+        var events = new List<TimelineEventDto>();
+        var nameCache = new Dictionary<string, string>();
+
+        async Task<string> Name(string? id)
+        {
+            if (string.IsNullOrWhiteSpace(id)) return "-";
+            if (id == "SYSTEM") return "ระบบ";
+            if (nameCache.TryGetValue(id, out var cached)) return cached;
+            var emp = await employeeRepo.GetByIdAsync(id, ct);
+            var name = emp?.FullNameTh ?? id;
+            nameCache[id] = name;
+            return name;
+        }
+
+        // Created
+        events.Add(new TimelineEventDto("Created", "สร้างคำขอ", await Name(lr.CreatedBy), lr.CreatedAt, null));
+
+        // Approve / Reject บน LeaveRequest
+        foreach (var h in await approvalHistoryRepo.GetByLeaveRequestAsync(leaveRequestId, ct))
+        {
+            var (type, label) = h.Action == ApprovalAction.Approved
+                ? ("Approved", "อนุมัติคำขอ")
+                : ("Rejected", "ปฏิเสธคำขอ");
+            events.Add(new TimelineEventDto(type, label, await Name(h.ApproverId), h.ActionAt, h.Reason));
+        }
+
+        // Cancel Requests + การพิจารณา
+        var cancels = await cancelRequestRepo.GetByLeaveRequestAsync(leaveRequestId, ct);
+        foreach (var cr in cancels)
+            events.Add(new TimelineEventDto("CancelRequested", "ขอยกเลิก", await Name(cr.EmployeeId), cr.CreatedAt, cr.Reason));
+
+        var cancelHist = await approvalHistoryRepo.GetByCancelRequestIdsAsync(
+            cancels.Select(c => c.CancelRequestId).ToList(), ct);
+        foreach (var h in cancelHist)
+        {
+            var (type, label) = h.Action == ApprovalAction.Approved
+                ? ("CancellationApproved", "อนุมัติการยกเลิก")
+                : ("CancellationRejected", "ปฏิเสธการยกเลิก");
+            events.Add(new TimelineEventDto(type, label, await Name(h.ApproverId), h.ActionAt, h.Reason));
+        }
+
+        // ยกเลิกทันที (Pending → Cancelled โดยไม่มี CancelRequest — SF-007)
+        if (lr.Status == LeaveStatus.Cancelled && cancels.Count == 0 && lr.UpdatedAt.HasValue)
+            events.Add(new TimelineEventDto("Cancelled", "ยกเลิกคำขอ", await Name(lr.UpdatedBy), lr.UpdatedAt.Value, null));
+
+        return events.OrderBy(e => e.ActionAt).ToList();
     }
 
     // ── Cancel (SCR-006) ──────────────────────────────────────────────────────
@@ -281,9 +358,7 @@ public class LeaveRequestService(
     public async Task RejectAsync(
         Guid leaveRequestId, string managerId, string? comment, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(comment))
-            throw new BusinessException("กรุณาระบุเหตุผลการปฏิเสธ", "REJECTION_REASON_REQUIRED");
-
+        // BR-013 (QA-M2): เหตุผลการ Reject เป็น optional — หัวหน้างานระบุหรือข้ามก็ได้
         var lr = await leaveRequestRepo.GetByIdAsync(leaveRequestId, ct)
             ?? throw new NotFoundException(nameof(LeaveRequest), leaveRequestId);
 
@@ -343,6 +418,10 @@ public class LeaveRequestService(
         if (cr.Status != CancelRequestStatus.Pending)
             throw new BusinessException("คำขอยกเลิกนี้ถูกดำเนินการแล้ว", "INVALID_STATUS");
 
+        // VR-012 (BR-SF009-003): SLA หมดแล้วห้ามดำเนินการ — คำขอถูก escalate ไป HR
+        if (cr.SlaDeadline < DateTime.UtcNow)
+            throw new BusinessException("หมดเวลาดำเนินการ คำขอถูกส่งต่อให้ HR แล้ว", "SLA_EXPIRED");
+
         var lr = cr.LeaveRequest!;
         if (lr.Employee.ManagerId != managerId)
             throw new BusinessException("ไม่มีสิทธิ์อนุมัติคำขอยกเลิกนี้", "FORBIDDEN");
@@ -393,11 +472,19 @@ public class LeaveRequestService(
     public async Task RejectCancelAsync(
         Guid cancelRequestId, string managerId, string? comment, CancellationToken ct = default)
     {
+        // BR-SF009-004: การปฏิเสธคำขอยกเลิกต้องระบุเหตุผลเสมอ (ต่างจาก reject การลาที่ optional ตาม BR-013)
+        if (string.IsNullOrWhiteSpace(comment))
+            throw new BusinessException("กรุณาระบุเหตุผลในการปฏิเสธคำขอยกเลิก", "REJECTION_REASON_REQUIRED");
+
         var cr = await cancelRequestRepo.GetByIdAsync(cancelRequestId, ct)
             ?? throw new NotFoundException(nameof(CancelRequest), cancelRequestId);
 
         if (cr.Status != CancelRequestStatus.Pending)
             throw new BusinessException("คำขอยกเลิกนี้ถูกดำเนินการแล้ว", "INVALID_STATUS");
+
+        // VR-012 (BR-SF009-003): SLA หมดแล้วห้ามดำเนินการ
+        if (cr.SlaDeadline < DateTime.UtcNow)
+            throw new BusinessException("หมดเวลาดำเนินการ คำขอถูกส่งต่อให้ HR แล้ว", "SLA_EXPIRED");
 
         var lr = cr.LeaveRequest!;
         if (lr.Employee.ManagerId != managerId)
@@ -454,6 +541,29 @@ public class LeaveRequestService(
             r.CreatedAt
         )).ToList();
         return new PagedResult<PendingApprovalDto>
+        { Items = dtos, TotalCount = total, Page = page, PageSize = pageSize };
+    }
+
+    // ── Processed by Manager (SCR-004 Processed tab, SF-004) ──────────────────
+
+    public async Task<PagedResult<HrLeaveRequestDto>> GetProcessedByManagerAsync(
+        string managerId, int page, int pageSize, CancellationToken ct = default)
+    {
+        var (items, total) = await leaveRequestRepo.GetProcessedByManagerAsync(managerId, page, pageSize, ct);
+        var dtos = items.Select(r => new HrLeaveRequestDto(
+            r.LeaveRequestId,
+            r.LeaveRequestRef,
+            r.EmployeeId,
+            r.Employee.FullNameTh,
+            r.Employee.Department,
+            r.LeaveType.TypeNameTh,
+            r.StartDate,
+            r.EndDate,
+            r.DurationDays,
+            r.Status.ToString(),
+            r.CreatedAt
+        )).ToList();
+        return new PagedResult<HrLeaveRequestDto>
         { Items = dtos, TotalCount = total, Page = page, PageSize = pageSize };
     }
 

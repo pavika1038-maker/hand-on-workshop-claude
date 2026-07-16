@@ -30,6 +30,24 @@ public class ApprovalsController(ILeaveRequestService service) : ControllerBase
         return Ok(response);
     }
 
+    /// <summary>รายการที่ Manager ดำเนินการแล้ว — Approved/Rejected (SCR-004 Processed tab, SF-004)</summary>
+    [HttpGet("processed")]
+    public async Task<IActionResult> GetProcessed(
+        [FromQuery] string? managerId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 15,
+        CancellationToken ct = default)
+    {
+        var mid = managerId ?? CallerEmployeeId;
+        if (string.IsNullOrWhiteSpace(mid))
+            return BadRequest(ApiResponse<object>.Fail("MISSING_MANAGER_ID", "ระบุ managerId หรือส่ง X-Employee-Id header"));
+
+        var result = await service.GetProcessedByManagerAsync(mid, page, pageSize, ct);
+        var response = ApiResponse<PagedResult<HrLeaveRequestDto>>.Ok(result);
+        response.Metadata = new PaginationMeta { Page = result.Page, PageSize = result.PageSize, TotalCount = result.TotalCount };
+        return Ok(response);
+    }
+
     /// <summary>อนุมัติคำร้อง (SCR-004)</summary>
     [HttpPatch("{id:guid}/approve")]
     public async Task<IActionResult> Approve(

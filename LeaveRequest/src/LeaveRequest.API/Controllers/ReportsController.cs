@@ -37,4 +37,33 @@ public class ReportsController : ControllerBase
 
         return Ok(response);
     }
+
+    /// <summary>รายงานสรุปการลา (aggregate) — HR only (SF-014 / RP-001)</summary>
+    [HttpGet("leave-summary")]
+    [ProducesResponseType(typeof(ApiResponse<LeaveSummaryReportDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetLeaveSummary(
+        [FromQuery] LeaveHistoryFilterRequest filter,
+        CancellationToken ct)
+    {
+        var result = await _service.GetLeaveSummaryAsync(filter, ct);
+        return Ok(ApiResponse<LeaveSummaryReportDto>.Ok(result));
+    }
+
+    /// <summary>Notification Log View — HR only (SF-015 / RP-003)</summary>
+    [HttpGet("notification-log")]
+    [ProducesResponseType(typeof(ApiResponse<NotificationLogReportDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetNotificationLog(
+        [FromQuery] NotificationLogFilterRequest filter,
+        CancellationToken ct)
+    {
+        var result = await _service.GetNotificationLogAsync(filter, ct);
+        var response = ApiResponse<NotificationLogReportDto>.Ok(result);
+        response.Metadata = new PaginationMeta
+        {
+            Page = result.Items.Page,
+            PageSize = result.Items.PageSize,
+            TotalCount = result.Items.TotalCount
+        };
+        return Ok(response);
+    }
 }

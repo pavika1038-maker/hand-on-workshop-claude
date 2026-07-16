@@ -27,6 +27,13 @@ public interface ILeaveRequestRepository
         int pageSize,
         CancellationToken ct = default);
 
+    /// <summary>รายการที่ Manager ดำเนินการแล้ว — Approved/Rejected (SCR-004 Processed tab, SF-004)</summary>
+    Task<(IReadOnlyList<LeaveRequest> Items, int Total)> GetProcessedByManagerAsync(
+        string managerId,
+        int page,
+        int pageSize,
+        CancellationToken ct = default);
+
     /// <summary>รายการ CancelRequest รอ Manager อนุมัติ (SCR-007)</summary>
     Task<(IReadOnlyList<CancelRequest> Items, int Total)> GetCancelRequestsByManagerAsync(
         string managerId,

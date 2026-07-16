@@ -1,12 +1,12 @@
 ---
 title: "Interface SRS Document"
 document_type: "Interface SRS"
-version: "1.0"
+version: "1.1"
 language: "th"
 project: "ระบบบริหารการลาและการอนุมัติ (Leave Request and Approval)"
 company: "ABC Company"
 created_date: "2026-06-16"
-last_updated: "2026-06-16"
+last_updated: "2026-07-15"
 status: "Draft"
 ---
 
@@ -17,6 +17,7 @@ status: "Draft"
 | Version | Date | Section | Change Type | Description | Source |
 |---------|------|---------|-------------|-------------|--------|
 | 1.0 | 2026-04-16 | All | Created | สร้างเอกสารจาก SRS Summary v0.3 — ครอบคลุม 3 interfaces (IF-001 ถึง IF-003) | SRS Summary v0.3 (BRD baseline) |
+| 1.1 | 2026-07-15 | 2.3.2, 2.3.6, 2.3.7, 2.3.8 (IF-003) | Added | บันทึกกฎ threshold rollback ของ Excel import — record ผิด > 50% ของทั้งไฟล์ → rollback ทั้งไฟล์ + HTTP 422 (เพิ่ม BR-IF003-001, ERR-IF003-007); เดิม SRS ระบุ partial import อย่างเดียว ไม่มีกฎ rollback นี้ (พฤติกรรมมีในโค้ดแต่ไม่มี requirement รองรับ) | Code review finding |
 
 ---
 
@@ -286,7 +287,7 @@ status: "Draft"
 | Integration Type | รับข้อมูล (Inbound) — HR upload Excel → Leave App อ่านและ validate → บันทึก Database |
 | Operation Type | ผู้ใช้สั่งงาน (Manual Batch) — HR เป็นผู้ trigger |
 | Frequency | ทุกต้นไตรมาสหรือเมื่อมีการเปลี่ยนแปลงรายชื่อ Outsource |
-| Additional Description | ระบบ validate ก่อน import ทุกครั้ง — import เฉพาะ record ที่ valid ทั้งหมด (ไม่ partial import row ที่มีข้อผิดพลาด) |
+| Additional Description | ระบบ validate ก่อน import ทุกครั้ง — โดยปกติ **partial import**: บันทึกเฉพาะ record ที่ valid, skip record ที่ผิดพร้อม error report **ยกเว้น** กรณีที่ record ผิด > 50% ของทั้งไฟล์ → ระบบ **rollback ทั้งไฟล์** (ไม่ import แม้ record ที่ valid) และตอบ HTTP 422 (ดู BR-IF003-001) |
 
 #### 2.3.3 Data Scope (ขอบเขตข้อมูล)
 
@@ -322,9 +323,10 @@ status: "Draft"
 | สถานการณ์ | Expected Result | หมายเหตุ |
 |---------|----------------|---------|
 | ทุก record ผ่าน validation | import สำเร็จทั้งหมด, SUC-IMP-001, ข้อมูล Outsource พร้อมใช้งาน | |
-| มี record ที่ validation ไม่ผ่าน | import เฉพาะ valid records, แสดง error report ระบุ row/field ที่ผิด | |
+| มี record ผิด แต่ ≤ 50% ของทั้งไฟล์ | partial import: บันทึกเฉพาะ valid records, skip record ที่ผิดพร้อม error report ระบุ row/field | ImportLog IsRolledBack = false |
+| มี record ผิด > 50% ของทั้งไฟล์ | **rollback ทั้งไฟล์** — ไม่ import แม้ record ที่ valid, แสดง ERR-IF003-007 + error report, ตอบ HTTP 422 | BR-IF003-001; ImportLog IsRolledBack = true |
 | ไฟล์ผิด format (.xls / .csv / etc.) | แสดง ERR-IMP-004, ไม่ import | |
-| ทุก record validation ไม่ผ่าน | ไม่ import เลย, แสดง error report ครบทุก row | |
+| ทุก record validation ไม่ผ่าน | rollback ทั้งไฟล์ (เข้าเงื่อนไข > 50%), แสดง error report ครบทุก row, ตอบ HTTP 422 | |
 
 #### 2.3.7 Message List
 
@@ -338,6 +340,7 @@ status: "Draft"
 | ERR-IF003-004 | Line Manager ไม่พบในระบบ | แถวที่ {N}: ไม่พบรหัสหัวหน้างาน {manager_id} ในระบบ | Row {N}: Manager ID {manager_id} not found in the system. | |
 | ERR-IF003-005 | วันที่ format ผิดหรือเป็นอนาคต | แถวที่ {N}: วันที่เริ่มงานไม่ถูกต้อง (ต้องเป็น YYYY-MM-DD และไม่เกินวันนี้) | Row {N}: Invalid start date (must be YYYY-MM-DD and not a future date). | |
 | ERR-IF003-006 | รูปแบบไฟล์ผิด | กรุณาอัปโหลดไฟล์ .xlsx เท่านั้น | Please upload .xlsx files only. | |
+| ERR-IF003-007 | record ผิด > 50% ของทั้งไฟล์ → rollback ทั้งไฟล์ (HTTP 422) | นำเข้าไม่สำเร็จ: มีข้อผิดพลาดเกิน 50% ของรายการ — ยกเลิกการนำเข้าทั้งหมด กรุณาแก้ไขไฟล์แล้วลองใหม่ | Import failed: over 50% of rows have errors — the entire file was rolled back. Please fix and retry. | Code review finding — ดู BR-IF003-001 |
 
 ##### Success Message
 
@@ -352,6 +355,7 @@ status: "Draft"
 | BR-020 | Outsource onboard ผ่าน Excel template — 7 required fields | validate ครบก่อน import ทุกครั้ง | BRD BR-020, R3 (QA v2) |  |
 | BR-011 | Outsource employee_type ถูกกำหนดอัตโนมัติหลัง import | ระบบ set employee_type = Outsource ให้ทุก record ที่ import ผ่าน IF-003 | BRD BR-011 | |
 | VR-013 | Validation rule: 7 required fields ครบ, email unique, manager_id ต้องมีในระบบ | block import record ที่ fail validation | SRS VR-013 | |
+| BR-IF003-001 | Threshold rollback: หาก record ผิด > 50% ของทั้งไฟล์ ให้ rollback ทั้งไฟล์ (ไม่ import แม้ record ที่ valid) และตอบ HTTP 422; หาก ≤ 50% ทำ partial import ตามปกติ | กำหนดพฤติกรรม import (partial vs rollback), กระทบ ImportLog.IsRolledBack และ HTTP status | Code review finding (พฤติกรรมจากโค้ด ImportService — ธุรกิจยังไม่เคยกำหนด threshold; ต้องให้ HR/BA ยืนยันตัวเลข 50%) | ⚠ ต้อง confirm |
 | NFR-006 | ข้อมูล Outsource ปกป้องเทียบเท่าพนักงานประจำ | หลัง import: ข้อมูลเข้าถึงได้เฉพาะ HR และ Manager ที่รับผิดชอบ | SRS NFR-006 | |
 
 #### 2.3.9 Notes / Assumptions

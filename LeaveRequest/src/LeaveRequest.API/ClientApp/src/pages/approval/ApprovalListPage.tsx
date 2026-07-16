@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { apiGet, apiFetch } from '../../api'
 import type { ApiResponse, PagedResult } from '../../types/leaveRequest'
-import { formatDate } from '../../types/leaveRequest'
+import { formatDate, STATUS_CONFIG } from '../../types/leaveRequest'
 
 function slaCountdown(deadline: string): string {
   const diff = new Date(deadline).getTime() - Date.now()
@@ -43,9 +43,21 @@ interface PendingCancelRequest {
   slaDeadline: string
 }
 
-type Tab = 'leave' | 'cancel'
+type Tab = 'leave' | 'processed' | 'cancel'
 type ModalAction = 'approve' | 'reject'
 interface ModalTarget { id: string; type: Tab; label: string }
+
+interface ProcessedItem {
+  leaveRequestId: string
+  leaveRequestRef: string
+  employeeFullNameTh: string
+  leaveTypeName: string
+  startDate: string
+  endDate: string
+  durationDays: number
+  status: string
+  createdAt: string
+}
 
 const PAGE_SIZE = 15
 
@@ -63,6 +75,14 @@ export default function ApprovalListPage() {
   const [loadingLeave, setLoadingLeave]   = useState(true)
   const [leaveError, setLeaveError]       = useState<string | null>(null)
   const [leaveRefresh, setLeaveRefresh]   = useState(0)
+
+  // Processed (SF-004)
+  const [processedItems, setProcessedItems]   = useState<ProcessedItem[]>([])
+  const [processedPage, setProcessedPage]     = useState(1)
+  const [processedTotalPages, setProcessedTotalPages] = useState(1)
+  const [processedTotalCount, setProcessedTotalCount] = useState(0)
+  const [loadingProcessed, setLoadingProcessed] = useState(false)
+  const [processedError, setProcessedError]   = useState<string | null>(null)
 
   // Cancel requests
   const [cancelItems, setCancelItems]     = useState<PendingCancelRequest[]>([])
@@ -114,6 +134,26 @@ export default function ApprovalListPage() {
 
   useEffect(() => { loadLeave() }, [loadLeave])
 
+  // Load processed (SF-004) — โหลดเมื่อเข้าแท็บ
+  const loadProcessed = useCallback(async () => {
+    if (!managerId) return
+    setLoadingProcessed(true); setProcessedError(null)
+    try {
+      const qs = new URLSearchParams({ managerId, page: String(processedPage), pageSize: String(PAGE_SIZE) })
+      const json = await apiGet<ApiResponse<PagedResult<ProcessedItem>>>(`/api/v1/approvals/processed?${qs}`)
+      if (json.success && json.data) {
+        setProcessedItems(json.data.items)
+        setProcessedTotalCount(json.data.totalCount)
+        setProcessedTotalPages(json.data.totalPages)
+      } else {
+        setProcessedError(json.message ?? 'ไม่สามารถโหลดรายการได้')
+      }
+    } catch { setProcessedError('เกิดข้อผิดพลาดในการเชื่อมต่อ') }
+    finally  { setLoadingProcessed(false) }
+  }, [managerId, processedPage])
+
+  useEffect(() => { if (tab === 'processed') loadProcessed() }, [tab, loadProcessed])
+
   // Load cancel requests
   const loadCancel = useCallback(async () => {
     if (!managerId) return
@@ -142,8 +182,9 @@ export default function ApprovalListPage() {
 
   const handleAction = async () => {
     if (!modal || !modalAction) return
-    if (modalAction === 'reject' && !comment.trim()) {
-      setActionError('กรุณาระบุเหตุผลในการปฏิเสธ')
+    // BR-013: reject การลา → เหตุผล optional | BR-SF009-004: reject การยกเลิก → เหตุผลบังคับ
+    if (modalAction === 'reject' && modal.type === 'cancel' && !comment.trim()) {
+      setActionError('กรุณาระบุเหตุผลในการปฏิเสธคำขอยกเลิก')
       commentRef.current?.focus()
       return
     }
@@ -187,7 +228,10 @@ export default function ApprovalListPage() {
       {/* Tabs */}
       <div style={s.tabs}>
         <button style={{ ...s.tab, ...(tab === 'leave' ? s.tabActive : {}) }} onClick={() => setTab('leave')}>
-          คำร้องขอลา {leaveTotalCount > 0 && <span style={s.tabBadge}>{leaveTotalCount}</span>}
+          รอดำเนินการ {leaveTotalCount > 0 && <span style={s.tabBadge}>{leaveTotalCount}</span>}
+        </button>
+        <button style={{ ...s.tab, ...(tab === 'processed' ? s.tabActive : {}) }} onClick={() => setTab('processed')}>
+          ดำเนินการแล้ว
         </button>
         <button style={{ ...s.tab, ...(tab === 'cancel' ? s.tabActive : {}) }} onClick={() => setTab('cancel')}>
           คำขอยกเลิก {cancelTotalCount > 0 && <span style={s.tabBadge}>{cancelTotalCount}</span>}
@@ -195,7 +239,7 @@ export default function ApprovalListPage() {
       </div>
 
       <section style={s.card}>
-        {tab === 'leave' ? (
+        {tab === 'leave' && (
           <>
             <h2 style={s.cardTitle}>รายการรออนุมัติ</h2>
             {loadingLeave ? <div style={s.center}>⏳ กำลังโหลด...</div>
@@ -249,7 +293,59 @@ export default function ApprovalListPage() {
               </>
             )}
           </>
-        ) : (
+        )}
+
+        {tab === 'processed' && (
+          <>
+            <h2 style={s.cardTitle}>รายการที่ดำเนินการแล้ว{processedTotalCount > 0 ? ` (${processedTotalCount})` : ''}</h2>
+            {loadingProcessed ? <div style={s.center}>⏳ กำลังโหลด...</div>
+            : processedError ? <div style={s.errorBox}>{processedError} <button style={s.btnLink} onClick={loadProcessed}>ลองใหม่</button></div>
+            : processedItems.length === 0 ? <div style={s.center}>ยังไม่มีรายการที่ดำเนินการแล้ว</div>
+            : (
+              <>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={s.table}>
+                    <thead><tr>
+                      {['พนักงาน','ประเภทการลา','วันที่','วัน','สถานะ','วันที่ยื่น',''].map(h => (
+                        <th key={h} style={s.th}>{h}</th>
+                      ))}
+                    </tr></thead>
+                    <tbody>
+                      {processedItems.map(item => {
+                        const cfg = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.Cancelled
+                        return (
+                          <tr key={item.leaveRequestId} style={s.tr}>
+                            <td style={s.td}>
+                              <div style={{ fontWeight: 500 }}>{item.employeeFullNameTh}</div>
+                              <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{item.leaveRequestRef}</div>
+                            </td>
+                            <td style={s.td}>{item.leaveTypeName}</td>
+                            <td style={{ ...s.td, whiteSpace: 'nowrap' }}>
+                              {formatDate(item.startDate)}{item.startDate !== item.endDate ? ` – ${formatDate(item.endDate)}` : ''}
+                            </td>
+                            <td style={{ ...s.td, textAlign: 'center' }}>{item.durationDays}</td>
+                            <td style={s.td}><span style={{ ...s.badge, backgroundColor: cfg.bg, color: cfg.color }}>{cfg.label}</span></td>
+                            <td style={{ ...s.td, whiteSpace: 'nowrap', color: 'var(--color-text-muted)' }}>{formatDate(item.createdAt)}</td>
+                            <td style={s.td}><Link to={`/leave-requests/${item.leaveRequestId}`} style={s.btnLink}>รายละเอียด</Link></td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                {processedTotalPages > 1 && (
+                  <div style={s.pagination}>
+                    <button style={s.pageBtn} disabled={processedPage === 1} onClick={() => setProcessedPage(p => p - 1)}>‹</button>
+                    <span style={{ fontSize: 13 }}>หน้า {processedPage} / {processedTotalPages}</span>
+                    <button style={s.pageBtn} disabled={processedPage === processedTotalPages} onClick={() => setProcessedPage(p => p + 1)}>›</button>
+                  </div>
+                )}
+              </>
+            )}
+          </>
+        )}
+
+        {tab === 'cancel' && (
           <>
             <h2 style={s.cardTitle}>คำขอยกเลิกรออนุมัติ</h2>
             {loadingCancel ? <div style={s.center}>⏳ กำลังโหลด...</div>
@@ -264,7 +360,9 @@ export default function ApprovalListPage() {
                     ))}
                   </tr></thead>
                   <tbody>
-                    {cancelItems.map(item => (
+                    {cancelItems.map(item => {
+                      const expired = new Date(item.slaDeadline) < new Date()   // VR-012
+                      return (
                       <tr key={item.cancelRequestId} style={s.tr}>
                         <td style={s.td}>
                           <div style={{ fontWeight: 500 }}>{item.employeeFullNameTh}</div>
@@ -277,17 +375,22 @@ export default function ApprovalListPage() {
                         <td style={{ ...s.td, maxWidth: 160 }}>
                           <span style={s.ellipsis}>{item.cancelReason ?? '—'}</span>
                         </td>
-                        <td style={{ ...s.td, whiteSpace: 'nowrap', color: new Date(item.slaDeadline) < new Date() ? '#dc2626' : '#d97706' }}>
+                        <td style={{ ...s.td, whiteSpace: 'nowrap', color: expired ? '#dc2626' : '#d97706' }}>
                           {slaCountdown(item.slaDeadline)}
                         </td>
                         <td style={s.td}>
-                          <div style={{ display: 'flex', gap: 6 }}>
-                            <button style={s.btnApprove} onClick={() => openModal(item.cancelRequestId, 'cancel', item.leaveRequestRef, 'approve')}>อนุมัติยกเลิก</button>
-                            <button style={s.btnReject}  onClick={() => openModal(item.cancelRequestId, 'cancel', item.leaveRequestRef, 'reject')}>ปฏิเสธ</button>
-                          </div>
+                          {expired ? (
+                            <span style={s.escalatedTag}>⚠ หมดเวลา — Escalated ไป HR</span>
+                          ) : (
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              <button style={s.btnApprove} onClick={() => openModal(item.cancelRequestId, 'cancel', item.leaveRequestRef, 'approve')}>อนุมัติยกเลิก</button>
+                              <button style={s.btnReject}  onClick={() => openModal(item.cancelRequestId, 'cancel', item.leaveRequestRef, 'reject')}>ปฏิเสธ</button>
+                            </div>
+                          )}
                         </td>
                       </tr>
-                    ))}
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -306,11 +409,13 @@ export default function ApprovalListPage() {
             <p style={s.modalRef}>{modal!.label}</p>
             <div style={s.field}>
               <label style={s.label}>
-                {modalAction === 'reject' ? 'เหตุผลการปฏิเสธ *' : 'หมายเหตุ (ถ้ามี)'}
+                {modalAction === 'reject'
+                  ? (modal?.type === 'cancel' ? 'เหตุผลการปฏิเสธ *' : 'เหตุผลการปฏิเสธ (ถ้ามี)')
+                  : 'หมายเหตุ (ถ้ามี)'}
               </label>
               <textarea ref={commentRef} style={s.textarea} rows={3} value={comment}
                 onChange={e => setComment(e.target.value)} disabled={submitting}
-                placeholder={modalAction === 'reject' ? 'กรุณาระบุเหตุผล...' : 'ระบุหมายเหตุ (ถ้ามี)'} />
+                placeholder={modalAction === 'reject' ? 'ระบุเหตุผล (ถ้ามี)...' : 'ระบุหมายเหตุ (ถ้ามี)'} />
             </div>
             {actionError && <div style={s.errorBox}>{actionError}</div>}
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
@@ -346,6 +451,8 @@ const s: Record<string, React.CSSProperties> = {
   tr:    { borderBottom: '1px solid var(--color-border)' },
   td:    { padding: '10px 12px', verticalAlign: 'middle' },
   ellipsis: { display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 },
+  badge: { display: 'inline-block', padding: '3px 10px', borderRadius: 10, fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap' },
+  escalatedTag: { fontSize: 12, color: '#9f1239', fontWeight: 500, whiteSpace: 'nowrap' },
   btnApprove:  { padding: '5px 14px', backgroundColor: '#15803d', color: '#fff', border: 'none', borderRadius: 4, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap' },
   btnReject:   { padding: '5px 14px', backgroundColor: 'transparent', color: '#dc2626', border: '1px solid #dc2626', borderRadius: 4, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap' },
   btnRejectLg: { padding: '8px 20px', backgroundColor: '#dc2626', color: '#fff', border: 'none', borderRadius: 4, fontSize: 13, cursor: 'pointer' },

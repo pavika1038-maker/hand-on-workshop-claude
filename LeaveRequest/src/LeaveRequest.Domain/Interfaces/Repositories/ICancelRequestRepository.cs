@@ -5,6 +5,9 @@ using LeaveRequest.Domain.Entities;
 public interface ICancelRequestRepository
 {
     Task<CancelRequest?> GetByIdAsync(Guid cancelRequestId, CancellationToken ct = default);
+
+    // SF-013: cancel requests ที่ผูกกับคำขอลานี้ (สำหรับ audit timeline)
+    Task<IReadOnlyList<CancelRequest>> GetByLeaveRequestAsync(Guid leaveRequestId, CancellationToken ct = default);
     Task AddAsync(CancelRequest cancelRequest, CancellationToken ct = default);
 
     // IF-005: returns Pending records in Reminder or Escalation window

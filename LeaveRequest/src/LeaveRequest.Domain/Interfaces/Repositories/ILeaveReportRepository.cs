@@ -20,4 +20,9 @@ public interface ILeaveReportRepository
         int page,
         int pageSize,
         CancellationToken ct = default);
+
+    // RP-001 (SF-014): ดึงทุก record ที่ match filter (ไม่ paginate) เพื่อ aggregate สรุป
+    Task<IReadOnlyList<LeaveRequestEntity>> GetForSummaryAsync(
+        LeaveHistoryQuery query,
+        CancellationToken ct = default);
 }

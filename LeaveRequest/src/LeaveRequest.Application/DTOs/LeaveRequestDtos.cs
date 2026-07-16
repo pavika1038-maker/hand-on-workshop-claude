@@ -58,7 +58,18 @@ public record LeaveRequestDetailDto(
     string? RejectedBy,
     DateTime? RejectedAt,
     string? RejectionReason,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    IReadOnlyList<AttachmentSummaryDto> Attachments
+);
+
+// ─── Audit Trail Timeline (GET /leave-requests/{id}/timeline) — SF-013 ───────
+
+public record TimelineEventDto(
+    string EventType,     // Created / Approved / Rejected / CancelRequested / CancellationApproved / CancellationRejected / Cancelled
+    string EventLabel,    // ป้ายภาษาไทย
+    string ActorName,
+    DateTime ActionAt,
+    string? Reason
 );
 
 // ─── Pending Approval (GET /approvals/pending) ───────────────────────────────
@@ -102,6 +113,7 @@ public record ApproveRejectDto(string? Comment);
 public record LeaveBalanceDashboardDto(
     string EmployeeId,
     int LeaveYear,
+    bool IsProbation,   // อายุงาน < 3 เดือน (BR-007) — ยังไม่มีสิทธิ์ลาพักผ่อน (INF-BAL-001)
     IReadOnlyList<LeaveBalanceItemDto> Balances
 );
 
